@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ventas y Cartera · Loteo</title>
+  <link rel="stylesheet" href="lib/maplibre-gl.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="icon" href="img/alpha_isotipo.png" type="image/png">
+</head>
+<body>
+  <!-- ============================== ENCABEZADO ============================== -->
+  <header class="top">
+    <div class="marca">
+      <img src="img/alpha_logo_color_blanco.svg" alt="ALPHA" class="logo">
+      <span class="sep"></span>
+      <div class="proyecto">
+        <strong id="tProyecto">Loteo</strong>
+        <small id="tSubtitulo">Control de ventas y cartera</small>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-vista="mapa" class="activo"><i data-lucide="map"></i><span>Mapa</span></button>
+      <button data-vista="tablero"><i data-lucide="layout-dashboard"></i><span>Tablero</span></button>
+      <div class="grupo"><button class="g-btn"><i data-lucide="wallet"></i><span>Cartera</span><i data-lucide="chevron-down" class="flecha"></i></button>
+        <div class="g-menu">
+          <button data-vista="cartera"><i data-lucide="table-2"></i><b>Cartera por lote</b><small>Saldo, mora y estado de cada lote</small></button>
+          <button data-vista="pagos"><i data-lucide="receipt-text"></i><b>Libro de pagos</b><small>Recibos de caja por consecutivo</small></button>
+          <button data-vista="cobranza"><i data-lucide="phone-call"></i><b>Cobranza</b><small>A quién cobrar hoy, gestiones y compromisos</small></button>
+        </div></div>
+      <div class="grupo"><button class="g-btn"><i data-lucide="handshake"></i><span>Comercial</span><i data-lucide="chevron-down" class="flecha"></i></button>
+        <div class="g-menu">
+          <button data-vista="prospectos"><i data-lucide="user-search"></i><b>Prospectos</b><small>Interesados, seguimiento y embudo de ventas</small></button>
+          <button data-vista="comisionistas"><i data-lucide="users"></i><b>Comisionistas</b><small>Comisiones generadas, causadas y pagadas</small></button>
+        </div></div>
+      <div class="grupo"><button class="g-btn"><i data-lucide="landmark"></i><span>Finanzas</span><i data-lucide="chevron-down" class="flecha"></i></button>
+        <div class="g-menu">
+          <button data-vista="flujo"><i data-lucide="chart-column"></i><b>Flujo de caja</b><small>Ingresos, egresos, proyección y resultado</small></button>
+          <button data-vista="gastos"><i data-lucide="receipt"></i><b>Gastos</b><small>Egresos del proyecto con comprobante</small></button>
+          <button data-vista="conciliacion"><i data-lucide="git-compare"></i><b>Conciliación bancaria</b><small>Cruce con el extracto del banco</small></button>
+        </div></div>
+      <div class="grupo"><button class="g-btn"><i data-lucide="shield-check"></i><span>Administración</span><span class="badge-n" id="nAprob"></span><i data-lucide="chevron-down" class="flecha"></i></button>
+        <div class="g-menu">
+          <button data-vista="aprobaciones"><i data-lucide="shield-alert"></i><b>Aprobaciones</b><small>Operaciones que esperan visto bueno de un dueño</small></button>
+          <button data-vista="usuarios" data-solo="DUENO"><i data-lucide="user-cog"></i><b>Usuarios</b><small>Quién entra y qué puede hacer</small></button>
+          <button data-vista="auditoria" data-solo="DUENO,CONSULTA"><i data-lucide="scroll-text"></i><b>Auditoría</b><small>Bitácora sellada e integridad</small></button>
+        </div></div>
+    </nav>
+    <div class="acciones-top">
+      <div class="buscador">
+        <i data-lucide="search"></i>
+        <input id="buscar" type="search" placeholder="Lote, comprador o documento…" autocomplete="off">
+        <div class="sugerencias" id="sugerencias"></div>
+      </div>
+      <button class="icono campana" id="btnAvisos" title="Avisos"><i data-lucide="bell"></i><span class="badge-n" id="nAvisos"></span></button>
+      <button class="icono" id="btnAyuda" title="Ayuda"><i data-lucide="circle-help"></i></button>
+      <button class="chip-usuario" id="btnUsuario" title="Mi cuenta"><i data-lucide="user-round"></i><span class="cu-txt"><span id="tUsuario">—</span><small id="tRol"></small></span></button>
+      <button class="icono" id="btnConfig" title="Configuración" data-solo="DUENO,OPERADOR"><i data-lucide="settings"></i></button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================================ MAPA ================================ -->
+    <section class="vista activa" id="vista-mapa">
+      <aside class="panel-izq">
+        <div class="kpis-mini" id="kpisMini"></div>
+
+        <div class="bloque">
+          <div class="bloque-tit">Ver el mapa por</div>
+          <div class="segmento" id="temas">
+            <button data-tema="estado" class="activo">Estado</button>
+            <button data-tema="cartera">Cartera</button>
+            <button data-tema="avance">Avance</button>
+          </div>
+          <div class="leyenda" id="leyenda"></div>
+        </div>
+
+        <div class="bloque">
+          <div class="bloque-tit">Filtrar</div>
+          <label class="campo">
+            <span>Manzana</span>
+            <select id="fManzana"><option value="">Todas las manzanas</option></select>
+          </label>
+          <div class="nota-filtro" id="notaFiltro"></div>
+        </div>
+
+        <div class="bloque">
+          <div class="bloque-tit">Mapa base</div>
+          <div class="bases" id="bases">
+            <button data-base="orto" id="baseOrto" disabled><i data-lucide="plane"></i><span>Ortofoto</span><em>Pendiente</em></button>
+            <button data-base="satelite" class="activo"><i data-lucide="globe-2"></i><span>Satélite</span></button>
+            <button data-base="claro"><i data-lucide="map"></i><span>Claro</span></button>
+          </div>
+          <label class="deslizador"><span>Opacidad de lotes</span><b id="tOpac">78 %</b><input type="range" id="rngOpac" min="10" max="100" value="78"></label>
+          <label class="interruptor"><input type="checkbox" id="chkEtq" checked><span></span>Números de lote</label>
+        </div>
+
+        <div class="bloque">
+          <div class="bloque-tit">Requieren gestión <span class="badge-n" id="gestionN"></span></div>
+          <div class="gestion" id="gestion"></div>
+        </div>
+      </aside>
+
+      <div class="mapa-wrap">
+        <div id="mapa"></div>
+        <div class="tooltip" id="tooltip"></div>
+        <div class="mapa-pie">
+          <span><i data-lucide="info"></i> Toque un lote para ver su ficha</span>
+          <span id="coords"></span>
+        </div>
+      </div>
+
+      <aside class="ficha" id="ficha" aria-hidden="true">
+        <div class="ficha-cont" id="fichaCont"></div>
+      </aside>
+    </section>
+
+    <!-- =============================== TABLERO =============================== -->
+    <section class="vista" id="vista-tablero">
+      <div class="pagina">
+        <div class="pagina-cab">
+          <div>
+            <h1>Tablero de ventas y cartera</h1>
+            <p id="tbFecha"></p>
+          </div>
+          <div class="botones">
+            <button class="btn sec" id="btnInforme"><i data-lucide="printer"></i>Informe general</button>
+          </div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="grilla-tablero">
+          <div class="tarjeta"><h3>Inventario por estado</h3><div id="gEstados"></div></div>
+          <div class="tarjeta"><h3>Recaudo mensual</h3><div id="gRecaudo"></div></div>
+          <div class="tarjeta"><h3>Cartera vencida por edad</h3><div id="gMora"></div></div>
+          <div class="tarjeta ancha"><h3>Resumen por manzana</h3><div class="tabla-wrap" id="tManzanas"></div></div>
+          <div class="tarjeta"><h3>Últimos pagos</h3><div id="lRecientes"></div></div>
+          <div class="tarjeta"><h3>Cuotas próximas (30 días)</h3><div id="lProximos"></div></div>
+          <div class="tarjeta"><h3>Comisiones por pagar</h3><div id="lComisiones"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================== CARTERA =============================== -->
+    <section class="vista" id="vista-cartera">
+      <div class="pagina">
+        <div class="pagina-cab">
+          <div>
+            <h1>Cartera por lote</h1>
+            <p>Todos los lotes con su estado comercial, saldo y mora.</p>
+          </div>
+          <div class="botones">
+            <a class="btn sec" href="/api/exportar/cartera.csv"><i data-lucide="file-spreadsheet"></i>Exportar a Excel</a>
+          </div>
+        </div>
+        <div class="filtros-tabla">
+          <div class="buscador peq"><i data-lucide="search"></i><input id="cBuscar" type="search" placeholder="Buscar en la tabla…"></div>
+          <select id="cEstado">
+            <option value="">Todos los estados</option>
+            <option value="DISPONIBLE">Disponible</option><option value="SEPARADO">Separado</option>
+            <option value="VENDIDO">Vendido (con saldo)</option><option value="PAGADO">Pagado</option>
+            <option value="ESCRITURADO">Escriturado</option><option value="BLOQUEADO">Bloqueado</option>
+            <option value="NEGOCIADO">Con negocio (todos)</option>
+          </select>
+          <select id="cCartera">
+            <option value="">Toda la cartera</option>
+            <option value="AL_DIA">Al día</option><option value="MORA">En mora (todas)</option>
+            <option value="MORA_30">Mora 1–30 días</option><option value="MORA_90">Mora 31–90 días</option>
+            <option value="MORA_MAS_90">Mora más de 90 días</option>
+          </select>
+          <select id="cManzana"><option value="">Todas las manzanas</option></select>
+          <span class="contador" id="cContador"></span>
+        </div>
+        <div class="tabla-wrap grande" id="tCartera"></div>
+      </div>
+    </section>
+
+    <!-- ================================ PAGOS ================================ -->
+    <section class="vista" id="vista-pagos">
+      <div class="pagina">
+        <div class="pagina-cab">
+          <div>
+            <h1>Libro de pagos</h1>
+            <p>Recibos de caja emitidos, en orden de consecutivo.</p>
+          </div>
+          <div class="botones">
+            <a class="btn sec" href="/api/exportar/pagos.csv"><i data-lucide="file-spreadsheet"></i>Exportar a Excel</a>
+          </div>
+        </div>
+        <div class="filtros-tabla">
+          <div class="buscador peq"><i data-lucide="search"></i><input id="pBuscar" type="search" placeholder="Recibo, lote o comprador…"></div>
+          <label class="campo-inline">Desde <input type="date" id="pDesde"></label>
+          <label class="campo-inline">Hasta <input type="date" id="pHasta"></label>
+          <label class="interruptor"><input type="checkbox" id="pAnulados"><span></span>Ver anulados</label>
+          <span class="contador" id="pContador"></span>
+        </div>
+        <div class="tabla-wrap grande" id="tPagos"></div>
+      </div>
+    </section>
+
+    <!-- ============================= COMISIONISTAS ============================= -->
+    <section class="vista" id="vista-comisionistas">
+      <div class="pagina">
+        <div class="pagina-cab">
+          <div>
+            <h1>Comisionistas</h1>
+            <p>Asesores e inmobiliarias que venden lotes: comisiones generadas, causadas, pagadas y por pagar.</p>
+          </div>
+          <div class="botones">
+            <a class="btn sec" href="/api/exportar/comisiones.csv"><i data-lucide="file-spreadsheet"></i>Comisiones a Excel</a>
+            <a class="btn sec" href="/api/exportar/pagos_comision.csv"><i data-lucide="file-spreadsheet"></i>Pagos a Excel</a>
+            <button class="btn pri" id="btnNuevoCom"><i data-lucide="user-plus"></i>Nuevo comisionista</button>
+          </div>
+        </div>
+        <div class="kpis" id="kpisCom"></div>
+        <div class="filtros-tabla">
+          <div class="buscador peq"><i data-lucide="search"></i><input id="comBuscar" type="search" placeholder="Nombre, documento o teléfono…"></div>
+          <select id="comEstado"><option value="">Todos</option><option value="ACTIVO" selected>Activos</option><option value="INACTIVO">Inactivos</option></select>
+          <span class="contador" id="comContador"></span>
+        </div>
+        <div class="tabla-wrap grande" id="tComisionistas"></div>
+      </div>
+    </section>
+    <!-- ============================= VISTAS DE GESTIÓN ============================= -->
+    <section class="vista" id="vista-cobranza"><div class="pagina" id="pagCobranza"></div></section>
+    <section class="vista" id="vista-prospectos"><div class="pagina" id="pagProspectos"></div></section>
+    <section class="vista" id="vista-gastos"><div class="pagina" id="pagGastos"></div></section>
+    <section class="vista" id="vista-flujo"><div class="pagina" id="pagFlujo"></div></section>
+    <section class="vista" id="vista-conciliacion"><div class="pagina" id="pagConc"></div></section>
+    <section class="vista" id="vista-aprobaciones"><div class="pagina" id="pagAprob"></div></section>
+    <section class="vista" id="vista-usuarios"><div class="pagina" id="pagUsuarios"></div></section>
+    <section class="vista" id="vista-auditoria"><div class="pagina" id="pagAuditoria"></div></section>
+  </main>
+
+  <!-- ventana modal genérica -->
+  <div class="modal-fondo" id="modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-cab"><h2 id="modalTit"></h2><button class="icono" data-cerrar><i data-lucide="x"></i></button></div>
+      <form id="modalForm" autocomplete="off">
+        <div class="modal-cuerpo" id="modalCuerpo"></div>
+        <div class="modal-pie" id="modalPie"></div>
+      </form>
+    </div>
+  </div>
+  <div class="avisos" id="avisos"></div>
+
+  <script src="lib/maplibre-gl.js"></script>
+  <script src="lib/lucide.min.js"></script>
+  <script src="js/letras.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/informe.js"></script>
+  <script src="js/comisiones.js"></script>
+  <script src="js/seguridad.js"></script>
+  <script src="js/finanzas.js"></script>
+  <script src="js/cobranza.js"></script>
+  <script src="js/documentos.js"></script>
+  <script src="js/prospectos.js"></script>
+  <script src="js/ayuda.js"></script>
+</body>
+</html>

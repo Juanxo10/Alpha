@@ -1,0 +1,7 @@
+# La imagen solo lleva el programa: nunca datos de clientes, herramientas ni respaldos.
+clientes/
+herramientas/
+despliegue/
+*.bat
+*.md
+**/__pycache__/
