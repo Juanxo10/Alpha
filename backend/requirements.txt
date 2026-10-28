@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pywebview
+pyinstaller
+httpx2
+psycopg[binary]
+psycopg-pool

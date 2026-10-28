@@ -1,0 +1,8 @@
+clientes/
+**/supabase.json
+pg_compartida.json
+node_modules/
+frontend/dist/
+__pycache__/
+.pytest_cache/
+*.sqlite

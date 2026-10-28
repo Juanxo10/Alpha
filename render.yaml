@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: geovisor-backend
+    runtime: docker
+    plan: starter            # el gratuito se duerme y no tiene disco: las alertas y la cartografía no funcionarían
+    healthCheckPath: /salud
+    disk:
+      name: clientes
+      mountPath: /app/clientes   # aquí van cartografía, marca y expedientes de cada cliente: clientes/<id>/...
+      sizeGB: 5
+    envVars:
+      - key: CLIENTES_DIR
+        value: /app/clientes
+      - key: PG_MERCED           # JSON con host, port, dbname, user, password de Supabase de Merced
+        sync: false

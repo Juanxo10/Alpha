@@ -1,0 +1,124 @@
+/* NUEVAS FUNCIONES · estilos de Contratos */
+.nf-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  color: var(--c); background: color-mix(in srgb, var(--c) 14%, white); }
+.nf-bloque { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--borde-2); }
+.nf-tabla td { vertical-align: middle; }
+.nf-tabla small { color: var(--txt-3); }
+.nf-tabla .nf-acc { text-align: right; white-space: nowrap; }
+.nf-tabla .nf-acc .btn { margin-left: 4px; }
+.nf-tabla tr.nf-inactivo td { opacity: .55; }
+.nf-previa { max-height: 52vh; overflow-y: auto; background: #EEF2F3; border-radius: 10px; padding: 14px; }
+.nf-hoja { background: #fff; max-width: 760px; margin: 0 auto; padding: 26px 34px; box-shadow: var(--sombra); border-radius: 4px; }
+.nf-hoja .titulo-doc { text-align: center; font: 600 15px Lexend, Arial; color: var(--teal); margin-bottom: 12px; }
+.nf-hoja .legal { font-size: 12.5px; line-height: 1.6; text-align: justify; }
+.nf-hoja .legal h2 { font: 600 13px Lexend, Arial; color: var(--teal); margin: 14px 0 6px; display: flex; gap: 8px; align-items: center; }
+.nf-hoja .legal h2 span { width: 20px; height: 20px; border-radius: 50%; background: var(--menta); display: grid; place-items: center; font-size: 11px; }
+.nf-hoja .falta { background: #FEF08A; }
+.nf-hoja .firmas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 40px; font-size: 12px; }
+.nf-hoja .firmas.n3 { grid-template-columns: repeat(3, 1fr); }
+.nf-hoja .firmas div { border-top: 1px solid var(--teal); padding-top: 6px; }
+.nf-hoja .plan-contrato table { width: 100%; font-size: 11.5px; border-collapse: collapse; }
+.nf-hoja .plan-contrato td, .nf-hoja .plan-contrato th { padding: 3px 6px; border-bottom: 1px solid var(--borde-2); text-align: left; }
+.nf-hoja .plan-contrato .d { text-align: right; }
+.nf-hoja .pc-tit { font-weight: 700; margin: 6px 0 4px; }
+.nf-ed-cols { display: grid; grid-template-columns: 1fr 250px; gap: 12px; margin-top: 8px; }
+.nf-ed-cols textarea { width: 100%; height: 46vh; font: 12.5px/1.55 Consolas, "Cascadia Mono", monospace; padding: 10px; }
+.nf-vars { max-height: 50vh; overflow-y: auto; border: 1px solid var(--borde); border-radius: 9px; padding: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
+.nf-vars .nf-vg { width: 100%; font: 600 11px Lexend, Arial; color: var(--teal); margin: 6px 0 2px; text-transform: uppercase; letter-spacing: .4px; }
+.nf-vars button { border: 1px solid var(--borde); background: var(--sup-2); border-radius: 6px; font: 11px Consolas, monospace; padding: 3px 6px; }
+.nf-vars button:hover { border-color: var(--menta-osc); background: #F0FBF6; }
+@media (max-width: 900px) { .nf-ed-cols { grid-template-columns: 1fr; } .nf-hoja { padding: 16px; } }
+
+/* NUEVAS FUNCIONES · bienes recibidos como pago */
+.nf-bien-cab { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.nf-bien-cab > svg { width: 34px; height: 34px; padding: 7px; border-radius: 10px; background: var(--sup-2); color: var(--teal); }
+.nf-flujo h3 { display: flex; align-items: center; gap: 8px; }
+.nf-flujo-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.nf-flujo-g div { background: var(--sup-2); border-radius: 9px; padding: 10px 12px; }
+.nf-flujo-g small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--txt-3); font-weight: 700; }
+.nf-flujo-g b { display: block; font: 600 18px Lexend, Arial; color: var(--teal); margin: 3px 0; }
+.nf-flujo-g span { font-size: 12px; color: var(--txt-2); }
+@media (max-width: 760px) { .nf-flujo-g { grid-template-columns: 1fr; } }
+
+/* NUEVAS FUNCIONES · venta en bloque */
+.nfl-btn { position: absolute; top: 12px; left: 12px; z-index: 4; display: flex; align-items: center; gap: 7px; border: 0; background: var(--sup);
+  color: var(--teal); font: 600 13px Lexend, Arial; padding: 9px 13px; border-radius: 10px; box-shadow: var(--sombra-alta); cursor: pointer; }
+.nfl-btn.activo { background: #7C3AED; color: #fff; }
+.nfl-panel { position: absolute; left: 12px; bottom: 48px; z-index: 5; width: 330px; max-height: 60%; display: flex; flex-direction: column; background: var(--sup);
+  border-radius: 12px; box-shadow: var(--sombra-alta); overflow: hidden; }
+.nfl-cab { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #7C3AED; color: #fff; }
+.nfl-cab b { display: flex; align-items: center; gap: 6px; font-family: Lexend, Arial; }
+.nfl-cab span { margin-left: auto; font-size: 12px; opacity: .9; }
+.nfl-cab .icono { color: #fff; width: 28px; height: 28px; }
+.nfl-lista { overflow-y: auto; padding: 6px 10px; }
+.nfl-lista div { display: grid; grid-template-columns: 1fr auto auto 22px; gap: 10px; align-items: center; font-size: 12.5px; padding: 4px 0; border-bottom: 1px solid var(--borde-2); }
+.nfl-lista span { color: var(--txt-2); font-variant-numeric: tabular-nums; }
+.nfl-tot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px 12px; background: var(--sup-2); }
+.nfl-tot small, .nfl-res small { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--txt-3); font-weight: 700; }
+.nfl-tot b { font: 600 13px Lexend, Arial; color: var(--teal); }
+.nfl-vacio { padding: 14px 12px; color: var(--txt-3); font-size: 12.5px; }
+.nfl-acc { display: flex; gap: 8px; padding: 10px 12px; justify-content: flex-end; border-top: 1px solid var(--borde-2); }
+.nfl-caja { position: absolute; z-index: 6; border: 2px dashed #7C3AED; background: rgba(124,58,237,.12); pointer-events: none; }
+.nfl-orden > div { display: grid; grid-template-columns: 26px 1fr auto auto 24px 24px; gap: 10px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--borde-2); font-size: 13px; }
+.nfl-n { width: 22px; height: 22px; border-radius: 50%; background: #EDE9FE; color: #5B21B6; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.nfl-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.nfl-modos label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--borde); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.nfl-modos label:has(input:checked) { border-color: #7C3AED; background: #F5F3FF; }
+.nfl-modos small { display: block; color: var(--txt-2); font-size: 11.5px; margin-top: 3px; line-height: 1.4; }
+.nfl-res { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 6px 0 10px; }
+.nfl-res div { background: var(--sup-2); border-radius: 9px; padding: 8px 10px; }
+.nfl-res b { font: 600 14px Lexend, Arial; color: var(--teal); }
+.nfl-tabla td, .nfl-tabla th { font-size: 12px; }
+.nfl-reglas { display: flex; gap: 10px; flex-wrap: wrap; }
+.nfl-reglas div { background: #F5F3FF; border-radius: 10px; padding: 8px 14px; }
+.nfl-reglas b { display: block; font: 600 18px Lexend, Arial; color: #5B21B6; }
+.nfl-reglas span { font-size: 12px; color: var(--txt-2); }
+.nfl-chip { display: inline-block; background: #EDE9FE; color: #5B21B6; border-radius: 6px; padding: 1px 6px; font-size: 11.5px; font-weight: 600; margin: 1px 0; }
+.nfl-aviso { display: flex; gap: 10px; align-items: center; margin: 10px 16px 0; padding: 9px 12px; border-radius: 10px; background: #F5F3FF; color: #4C1D95; font-size: 12.5px; }
+.nfl-aviso > svg { color: #7C3AED; flex-shrink: 0; }
+.nfl-aviso .btn { margin-left: auto; flex-shrink: 0; }
+.nfl-det-cab { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+.nfl-det-cab b { display: block; font-family: Lexend, Arial; color: var(--teal); }
+.nfl-det-cab small { display: block; color: var(--txt-3); font-size: 11.5px; }
+.nfl-plan { max-height: 260px; overflow-y: auto; border: 1px solid var(--borde-2); border-radius: 9px; }
+.nfl-barra { width: 80px; height: 7px; background: var(--borde-2); border-radius: 4px; overflow: hidden; }
+.nfl-barra i { display: block; height: 100%; background: #7C3AED; }
+.ec { font-size: 11px; font-weight: 700; } .ec.PAGADA { color: #15803D; } .ec.VENCIDA { color: #DC2626; } .ec.PARCIAL { color: #D97706; } .ec.PENDIENTE { color: #82959A; }
+@media (max-width: 760px) {
+  .nfl-btn { top: 56px; } .nfl-panel { left: 8px; right: 8px; width: auto; bottom: 8px; }
+  .nfl-res { grid-template-columns: repeat(2, 1fr); } .nfl-modos { grid-template-columns: 1fr; }
+}
+
+.nfl-nota { padding: 6px 12px 0; font-size: 11.5px; color: #92400E; }
+.nfl-orden .nfl-precio { width: 150px; }
+.nfl-orden .nfl-precio input { height: 32px; }
+
+/* X grande y fácil de tocar */
+.nfl-x { margin-left: 6px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 9px; cursor: pointer;
+  background: rgba(255,255,255,.18); color: #fff; }
+.nfl-x:hover { background: rgba(255,255,255,.32); }
+.nfl-x svg { width: 20px; height: 20px; pointer-events: none; }
+
+/* el display:flex del panel anulaba el atributo hidden: el panel quedaba visible aunque estuviera cerrado */
+.nfl-panel[hidden], .nfl-caja[hidden] { display: none !important; }
+
+/* vista previa del contrato dentro de un modal */
+.nf-hoja .firmas.legal-f { gap: 40px 30px; }
+.nf-tabla .btn svg, .nf-tabla .link svg { width: 15px; height: 15px; }
+.nfl-panel .link svg { width: 14px; height: 14px; }
+
+/* capas: botón y panel de selección (4) < barra superior con sus menús (5) < ficha y sus ventanas (6). Así los menús no quedan tapados
+   por el botón del mapa y las ventanas que se abren desde la ficha siguen por encima de la barra. */
+.top { z-index: 5; }
+.nfl-btn, .nfl-panel { z-index: 4; }
+
+/* el texto de ayuda de un campo no debe heredar el estilo de la ventana de Ayuda (min-height y grilla) */
+.campo > .ayuda { display: block; min-height: 0; grid-template-columns: none; gap: 0; }
+
+/* con una ventana abierta los avisos suben al centro para no tapar sus botones */
+body:has(.modal-fondo.visible) .avisos { top: 20px; bottom: auto; right: 50%; transform: translateX(50%); }
+
+/* el formulario de la ventana se encoge: el cuerpo hace scroll y los botones quedan siempre visibles */
+.modal > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.modal-cuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.modal-pie { flex: 0 0 auto; }
