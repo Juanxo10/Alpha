@@ -167,6 +167,7 @@ def estado(r: Request):
         return {"configurado": configurado,
                 "sesion": s and {k: s[k] for k in ("usuario_id", "nombre", "usuario", "rol")},
                 "proyecto": config(c).get("proyecto"),
+                "pide_correo": bool(config(c).get("smtp_usuario") and config(c).get("smtp_clave")),
                 "marca": {"empresa": cli.get("empresa") or config(c).get("proyecto"),
                           "logo": os.path.exists(os.path.join(base.MARCA, "logo_claro.png")),
                           "pide_codigo": not configurado and bool(cli.get("codigo_instalacion"))}}
@@ -181,6 +182,11 @@ def entrar(d: dict, r: Request, resp: Response):
 def codigo(d: dict, r: Request, resp: Response):
     return _sin_candado_al_fallar(
         lambda c: _con_cookie(resp, r, *seguridad.verificar_codigo(c, d.get("reto"), d.get("codigo"), _ip(r))))
+
+
+@app.post("/api/sesion/reenviar")
+def reenviar(d: dict, r: Request):
+    return _sin_candado_al_fallar(lambda c: seguridad.reenviar_codigo(c, d.get("reto"), _ip(r)))
 
 
 @app.post("/api/sesion/configurar")

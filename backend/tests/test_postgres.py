@@ -83,13 +83,13 @@ def test_usuarios_y_sesiones_por_http(plataforma):
     http = TestClient(main.app)
     alfa, beta = {"host": "alfa.plataforma.com"}, {"host": "beta.plataforma.com"}
     assert http.get("/api/sesion/estado", headers=alfa).json()["configurado"] is False
-    r = http.post("/api/sesion/configurar", headers=alfa, json={"nombre": "Dueña Alfa", "usuario": "ana", "clave": "secreta1"})
+    r = http.post("/api/sesion/configurar", headers=alfa, json={"nombre": "Dueña Alfa", "usuario": "ana", "clave": "secreta1234"})
     assert r.status_code == 200, r.text
     token = r.json()["token"]
     assert http.get("/api/sesion/estado", headers=beta).json()["configurado"] is False      # beta no tiene usuarios
     assert http.get("/api/lotes", headers={**alfa, "X-Sesion": token}).status_code == 200
     assert http.get("/api/lotes", headers={**beta, "X-Sesion": token}).status_code == 401    # el token de alfa no sirve en beta
-    assert http.post("/api/sesion/entrar", headers=beta, json={"usuario": "ana", "clave": "secreta1"}).status_code == 400
+    assert http.post("/api/sesion/entrar", headers=beta, json={"usuario": "ana", "clave": "secreta1234"}).status_code == 400
     assert len(http.get("/api/lotes", headers={**alfa, "X-Sesion": token}).json()) == 2
 
 
@@ -97,10 +97,48 @@ def test_la_sesion_sobrevive_a_otro_proceso(plataforma):
     """Con las sesiones en la base, otro worker (otro cliente HTTP, sin memoria compartida) las reconoce y el cierre es real."""
     alfa = {"host": "alfa.plataforma.com"}
     uno, dos = TestClient(main.app), TestClient(main.app)
-    token = uno.post("/api/sesion/entrar", headers=alfa, json={"usuario": "ana", "clave": "secreta1"}).json()["token"]
+    token = uno.post("/api/sesion/entrar", headers=alfa, json={"usuario": "ana", "clave": "secreta1234"}).json()["token"]
     assert dos.get("/api/lotes", headers={**alfa, "X-Sesion": token}).status_code == 200
     assert dos.post("/api/sesion/salir", headers={**alfa, "X-Sesion": token}, json={}).status_code == 200
     assert uno.get("/api/lotes", headers={**alfa, "X-Sesion": token}).status_code == 401
     tenant.fijar(tenant.TENANTS["alfa"])
     with base.conectar() as c:
         assert not [r for r in c.execute("SELECT tok FROM sesiones") if r["tok"] == token]      # solo se guarda la huella
+
+
+def test_codigo_por_correo_para_todos_los_roles(plataforma, monkeypatch):
+    from nucleo import alertas
+    enviados = []
+    monkeypatch.setattr(alertas, "_correo", lambda cfg, destino, asunto, cuerpo, adj: enviados.append(cuerpo))
+    seguridad.FALLOS_IP.clear()
+    alfa = {"host": "alfa.plataforma.com"}
+    http = TestClient(main.app)
+    tenant.fijar(tenant.TENANTS["alfa"])
+    with base.conectar() as c:
+        base.set_config(c, "smtp_usuario", "x@x.com")
+        base.set_config(c, "smtp_clave", "x")
+        c.execute("UPDATE usuarios SET email='ana@x.com' WHERE usuario='ana'")
+    cuerpo = {"usuario": "ana", "clave": "secreta1234"}
+    try:
+        r = http.post("/api/sesion/entrar", headers=alfa, json=cuerpo).json()
+        assert r["codigo_requerido"] and len(enviados) == 1
+        codigo = enviados[-1].split("<b>")[1][:6]
+        assert http.post("/api/sesion/codigo", headers=alfa, json={"reto": r["reto"], "codigo": "000000" if codigo != "000000" else "111111"}).status_code == 400
+        assert http.post("/api/sesion/reenviar", headers=alfa, json={"reto": r["reto"]}).status_code == 400      # antes de 30 s
+        ok = http.post("/api/sesion/codigo", headers=alfa, json={"reto": r["reto"], "codigo": codigo})
+        assert ok.status_code == 200 and ok.json()["token"]
+        assert http.post("/api/sesion/codigo", headers=alfa, json={"reto": r["reto"], "codigo": codigo}).status_code == 400   # un solo uso
+        with base.conectar() as c:      # sin correo registrado no se puede entrar
+            c.execute("UPDATE usuarios SET email='' WHERE usuario='ana'")
+        assert http.post("/api/sesion/entrar", headers=alfa, json=cuerpo).status_code == 400
+        # el SMTP falla: error claro y no queda reto
+        with base.conectar() as c:
+            c.execute("UPDATE usuarios SET email='ana@x.com' WHERE usuario='ana'")
+        monkeypatch.setattr(alertas, "_correo", lambda *a: (_ for _ in ()).throw(OSError("smtp caído")))
+        assert http.post("/api/sesion/entrar", headers=alfa, json=cuerpo).status_code == 400
+        with base.conectar() as c:
+            assert c.execute("SELECT COUNT(*) FROM retos_ingreso").fetchone()[0] == 0
+    finally:
+        with base.conectar() as c:
+            base.set_config(c, "smtp_usuario", "")
+            base.set_config(c, "smtp_clave", "")

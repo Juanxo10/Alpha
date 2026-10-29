@@ -14,9 +14,9 @@ from .base import ZONA, ErrorNegocio, ahora, bitacora, config, num, verificar_ca
 ROLES = {"DUENO": "Dueño", "OPERADOR": "Asistente", "CONSULTA": "Consulta"}
 ABSOLUTA_H = 12
 REFRESCO_S = 30       # la huella de actividad se escribe como máximo cada 30 s: no hay una escritura por petición
-# shortcut: códigos y fallos por IP viven en memoria del proceso (las sesiones sí están en la base); con varias instancias o reinicios, llevarlos a la base
-RETOS = {}
+# shortcut: los fallos por IP viven en memoria del proceso (sesiones y códigos sí están en la base); con varias instancias o reinicios, llevarlos a la base
 CODIGO_MIN = 5
+REENVIO_S, ENVIO_MAX_S = 30, 15
 FALLOS_IP = {}
 _LOCK = threading.Lock()
 IP_MAX_FALLOS, IP_VENTANA_S = 10, 600
@@ -65,6 +65,9 @@ def guardar_usuario(c, autor, d):
         raise ErrorNegocio("Nombre y usuario son obligatorios.")
     if " " in usuario:
         raise ErrorNegocio("El usuario no puede tener espacios.")
+    cfg = config(c)
+    if cfg.get("smtp_usuario") and cfg.get("smtp_clave") and "@" not in (d.get("email") or ""):
+        raise ErrorNegocio("El correo es obligatorio: el ingreso se confirma con un código enviado a ese correo.")
     otro = c.execute("SELECT id FROM usuarios WHERE usuario=? AND id<>?", (usuario, int(d.get("id") or 0))).fetchone()
     if otro:
         raise ErrorNegocio("Ese nombre de usuario ya existe.")
@@ -138,8 +141,10 @@ def iniciar_sesion(c, usuario, clave, ip=""):
         raise ErrorNegocio("Usuario o clave incorrectos." + (" El usuario quedó bloqueado 15 minutos." if bloqueo else ""))
     c.execute("UPDATE usuarios SET intentos_fallidos=0, bloqueado_hasta=NULL WHERE id=?", (u["id"],))
     cfg = config(c)
-    if u["rol"] == "DUENO" and u["email"] and cfg.get("smtp_usuario") and cfg.get("smtp_clave"):
-        return None, _pedir_codigo(cfg, u)
+    if cfg.get("smtp_usuario") and cfg.get("smtp_clave"):      # sin SMTP no hay cómo enviar el código: solo así se puede entrar a configurarlo
+        if not u["email"]:
+            raise ErrorNegocio("Su usuario no tiene correo registrado. Pídale al dueño que lo agregue.")
+        return None, _pedir_codigo(c, cfg, u)
     return _abrir(c, u, ip)
 
 
@@ -149,44 +154,68 @@ def _abrir(c, u, ip):
     return _nueva_sesion(c, u), publico(u)
 
 
-def _pedir_codigo(cfg, u):
-    """Segundo factor de los dueños: código de 6 dígitos por correo, 5 minutos y 3 intentos."""
+def _mandar_codigo(c, cfg, u, reto, reenvios):
+    """Genera un código nuevo para el reto, lo guarda (solo su huella) y lo envía; si el correo no sale, el reto se borra."""
     from . import alertas
-    reto, codigo = secrets.token_urlsafe(16), f"{secrets.randbelow(10**6):06d}"
-    with _LOCK:
-        for k in [k for k, r in RETOS.items() if r["vence"] < time.time()]:
-            RETOS.pop(k)
-        RETOS[reto] = {"uid": u["id"], "codigo": codigo, "vence": time.time() + CODIGO_MIN * 60, "intentos": 0}
+    codigo, t = f"{secrets.randbelow(10**6):06d}", time.time()
+    c.execute("DELETE FROM retos_ingreso WHERE vence < ? OR (usuario_id=? AND reto<>?)", (t, u["id"], reto))
+    c.execute("DELETE FROM retos_ingreso WHERE reto=?", (reto,))
+    c.execute("INSERT INTO retos_ingreso (reto, usuario_id, codigo_hash, vence, intentos, enviado, reenvios) VALUES (?,?,?,?,0,?,?)",
+              (reto, u["id"], _huella(codigo), t + CODIGO_MIN * 60, t, reenvios))
     cuerpo = f"Su código de ingreso es <b>{codigo}</b>. Vence en {CODIGO_MIN} minutos. Si no fue usted, cambie su clave."
-    # hilo aparte: el SMTP tarda segundos y no debe retener el candado ni la transacción
-    threading.Thread(target=lambda: _enviar_codigo(alertas, cfg, u["email"], cuerpo), daemon=True).start()
+    fallo = []
+
+    def enviar():
+        try:
+            alertas._correo(cfg, u["email"], f"[{cfg.get('proyecto', 'Loteo')}] Código de ingreso", cuerpo, [])
+        except Exception:  # noqa: BLE001
+            logging.getLogger(__name__).exception("No se pudo enviar el código de ingreso")
+            fallo.append(1)
+    hilo = threading.Thread(target=enviar, daemon=True)
+    hilo.start()
+    hilo.join(ENVIO_MAX_S)        # si el SMTP no responde a tiempo se avisa en vez de dejar al usuario esperando
+    if fallo or hilo.is_alive():
+        c.execute("DELETE FROM retos_ingreso WHERE reto=?", (reto,))
+        raise ErrorNegocio("No se pudo enviar el código al correo. Intente de nuevo o avise al dueño.")
+
+
+def _pedir_codigo(c, cfg, u):
+    """Segundo factor: código de 6 dígitos por correo, 5 minutos y 3 intentos, guardado en la base."""
+    reto = secrets.token_urlsafe(16)
+    _mandar_codigo(c, cfg, u, reto, 0)
     a, d = u["email"].split("@", 1)
     return {"reto": reto, "correo": f"{a[:2]}***@{d}"}
 
 
-def _enviar_codigo(alertas, cfg, destino, cuerpo):
-    try:
-        alertas._correo(cfg, destino, f"[{cfg.get('proyecto', 'Loteo')}] Código de ingreso", cuerpo, [])
-    except Exception:  # noqa: BLE001
-        logging.getLogger(__name__).exception("No se pudo enviar el código de ingreso")
+def reenviar_codigo(c, reto, ip=""):
+    r = c.execute("SELECT * FROM retos_ingreso WHERE reto=?", (reto or "",)).fetchone()
+    if not r or r["vence"] < time.time():
+        _fallo_ip(ip)
+        raise ErrorNegocio("Código incorrecto o vencido. Vuelva a ingresar con su usuario y clave.")
+    if r["reenvios"] >= 3:
+        raise ErrorNegocio("Ya se reenvió el código demasiadas veces. Vuelva a ingresar con su usuario y clave.")
+    if time.time() - r["enviado"] < REENVIO_S:
+        raise ErrorNegocio(f"Espere {REENVIO_S} segundos para pedir otro código.")
+    _mandar_codigo(c, config(c), c.execute("SELECT * FROM usuarios WHERE id=?", (r["usuario_id"],)).fetchone(), reto, r["reenvios"] + 1)
+    return {"ok": True}
 
 
 def verificar_codigo(c, reto, codigo, ip=""):
-    with _LOCK:
-        r = RETOS.get(reto)
-        if r and (r["vence"] < time.time() or r["intentos"] >= 3):
-            RETOS.pop(reto, None)
-            r = None
-        if r:
-            r["intentos"] += 1
-            ok = hmac.compare_digest(str(codigo or "").strip(), r["codigo"])
-            if ok:
-                RETOS.pop(reto, None)
-    if not r or not ok:
+    r = c.execute("SELECT * FROM retos_ingreso WHERE reto=?", (reto or "",)).fetchone()
+    if r and (r["vence"] < time.time() or r["intentos"] >= 3):
+        c.execute("DELETE FROM retos_ingreso WHERE reto=?", (reto,))
+        r = None
+    ok = False
+    if r:
+        c.execute("UPDATE retos_ingreso SET intentos=intentos+1 WHERE reto=?", (reto,))
+        ok = hmac.compare_digest(_huella(str(codigo or "").strip()), r["codigo_hash"])
+        if ok:
+            c.execute("DELETE FROM retos_ingreso WHERE reto=?", (reto,))
+    if not ok:
         _fallo_ip(ip)
         raise ErrorNegocio("Código incorrecto o vencido. Vuelva a ingresar con su usuario y clave." if not r
                            else "Código incorrecto.")
-    return _abrir(c, c.execute("SELECT * FROM usuarios WHERE id=?", (r["uid"],)).fetchone(), ip)
+    return _abrir(c, c.execute("SELECT * FROM usuarios WHERE id=?", (r["usuario_id"],)).fetchone(), ip)
 
 
 def token_interno(c):

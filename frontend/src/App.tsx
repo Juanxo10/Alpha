@@ -50,6 +50,7 @@ interface Estado {
   configurado: boolean
   sesion: { nombre: string; rol: string } | null
   proyecto: string
+  pide_correo?: boolean
   marca: { empresa: string; logo?: boolean; pide_codigo?: boolean }
 }
 
@@ -57,6 +58,23 @@ function Ingreso({ estado, alEntrar }: { estado: Estado; alEntrar: () => void })
   const [error, setError] = useState('')
   const [reto, setReto] = useState<{ reto: string; correo: string } | null>(null)
   const nuevo = !estado.configurado
+  const [espera, setEspera] = useState(30)
+  useEffect(() => {
+    if (!reto) return
+    setEspera(30)
+    const t = setInterval(() => setEspera((s) => Math.max(0, s - 1)), 1000)
+    return () => clearInterval(t)
+  }, [reto])
+  async function reenviar() {
+    try {
+      await api('/api/sesion/reenviar', { reto: reto!.reto })
+      setError('Código reenviado.'); setEspera(30)
+    } catch (err) {
+      const m = (err as Error).message
+      if (m.includes('vencido') || m.includes('demasiadas')) setReto(null)
+      setError(m)
+    }
+  }
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const d = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>
@@ -88,12 +106,16 @@ function Ingreso({ estado, alEntrar }: { estado: Estado; alEntrar: () => void })
           {nuevo && estado.marca.pide_codigo && <label className="campo"><span>Código de instalación</span><input name="codigo" required autoComplete="off" /></label>}
           {nuevo && <>
             <label className="campo"><span>Nombre completo</span><input name="nombre" required /></label>
-            <label className="campo"><span>Correo</span><input name="email" type="email" /></label></>}
+            <label className="campo"><span>Correo</span><input name="email" type="email" required={!!estado.pide_correo} /></label></>}
           <label className="campo"><span>Usuario</span><input name="usuario" required autoCapitalize="off" autoComplete="username" autoFocus /></label>
           <label className="campo"><span>Clave</span><input name="clave" type="password" required minLength={nuevo ? 10 : undefined} autoComplete={nuevo ? 'new-password' : 'current-password'} /></label>
           {nuevo && <label className="campo"><span>Repita la clave</span><input name="clave2" type="password" required minLength={10} /></label>}</>}
           <div className="ing-error">{error}</div>
           <button className="btn pri" style={{ width: '100%', justifyContent: 'center', height: 44 }}>{reto ? 'Verificar código' : nuevo ? 'Crear cuenta e ingresar' : 'Ingresar'}</button>
+          {reto && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button type="button" className="btn" disabled={espera > 0} onClick={reenviar} style={{ flex: 1, justifyContent: 'center' }}>{espera > 0 ? `Reenviar código (${espera}s)` : 'Reenviar código'}</button>
+            <button type="button" className="btn" onClick={() => { setReto(null); setError('') }} style={{ flex: 1, justifyContent: 'center' }}>Volver</button>
+          </div>}
         </form>
         <div className="ing-pie"><ShieldCheck />Conexión privada · la sesión se cierra sola por inactividad</div>
       </div>
