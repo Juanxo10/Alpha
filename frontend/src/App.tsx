@@ -55,16 +55,24 @@ interface Estado {
 
 function Ingreso({ estado, alEntrar }: { estado: Estado; alEntrar: () => void }) {
   const [error, setError] = useState('')
+  const [reto, setReto] = useState<{ reto: string; correo: string } | null>(null)
   const nuevo = !estado.configurado
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const d = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>
     try {
+      if (reto) {
+        await api('/api/sesion/codigo', { reto: reto.reto, codigo: d.codigo })
+        return alEntrar()
+      }
       if (nuevo && d.clave !== d.clave2) throw new Error('Las claves no coinciden.')
-      await api(nuevo ? '/api/sesion/configurar' : '/api/sesion/entrar', d)
+      const res = await api<{ codigo_requerido?: boolean; reto: string; correo: string }>(nuevo ? '/api/sesion/configurar' : '/api/sesion/entrar', d)
+      if (res.codigo_requerido) { setError(''); return setReto(res) }
       alEntrar()
     } catch (err) {
-      setError((err as Error).message)
+      const m = (err as Error).message
+      if (reto && m.includes('vencido')) setReto(null)     // el reto se agotó: vuelve a pedir usuario y clave
+      setError(m)
     }
   }
   return (
@@ -73,17 +81,19 @@ function Ingreso({ estado, alEntrar }: { estado: Estado; alEntrar: () => void })
         <div className="ing-cab"><img src={estado.marca.logo ? '/marca/logo_claro.png' : '/marca/icono-192.png'} alt="" className={estado.marca.logo ? undefined : 'ing-ico'} /><div><b>{estado.marca.empresa}</b><span>Ventas y cartera</span></div><img src="/alpha/logo_blanco.svg" alt="Alpha" className="logo-alpha" /></div>
         <form onSubmit={enviar} autoComplete="on">
           <h2>{nuevo ? 'Configuración inicial' : 'Ingresar'}</h2>
-          <p>{nuevo ? 'Cree la cuenta del propietario (dueño). Con ella podrá crear después los usuarios de la oficina y aprobar las operaciones sensibles.'
+          <p>{reto ? `Le enviamos un código de 6 dígitos a ${reto.correo}. Vence en 5 minutos.`
+            : nuevo ? 'Cree la cuenta del propietario (dueño). Con ella podrá crear después los usuarios de la oficina y aprobar las operaciones sensibles.'
             : 'Ingrese con su usuario y clave. Cada operación queda registrada a su nombre.'}</p>
+          {reto ? <label className="campo"><span>Código</span><input name="codigo" required inputMode="numeric" maxLength={6} autoComplete="one-time-code" autoFocus /></label> : <>
           {nuevo && estado.marca.pide_codigo && <label className="campo"><span>Código de instalación</span><input name="codigo" required autoComplete="off" /></label>}
           {nuevo && <>
             <label className="campo"><span>Nombre completo</span><input name="nombre" required /></label>
             <label className="campo"><span>Correo</span><input name="email" type="email" /></label></>}
           <label className="campo"><span>Usuario</span><input name="usuario" required autoCapitalize="off" autoComplete="username" autoFocus /></label>
-          <label className="campo"><span>Clave</span><input name="clave" type="password" required minLength={nuevo ? 6 : undefined} autoComplete={nuevo ? 'new-password' : 'current-password'} /></label>
-          {nuevo && <label className="campo"><span>Repita la clave</span><input name="clave2" type="password" required minLength={6} /></label>}
+          <label className="campo"><span>Clave</span><input name="clave" type="password" required minLength={nuevo ? 10 : undefined} autoComplete={nuevo ? 'new-password' : 'current-password'} /></label>
+          {nuevo && <label className="campo"><span>Repita la clave</span><input name="clave2" type="password" required minLength={10} /></label>}</>}
           <div className="ing-error">{error}</div>
-          <button className="btn pri" style={{ width: '100%', justifyContent: 'center', height: 44 }}>{nuevo ? 'Crear cuenta e ingresar' : 'Ingresar'}</button>
+          <button className="btn pri" style={{ width: '100%', justifyContent: 'center', height: 44 }}>{reto ? 'Verificar código' : nuevo ? 'Crear cuenta e ingresar' : 'Ingresar'}</button>
         </form>
         <div className="ing-pie"><ShieldCheck />Conexión privada · la sesión se cierra sola por inactividad</div>
       </div>

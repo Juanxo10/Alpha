@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import threading
+import time
 
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
@@ -132,9 +133,30 @@ def _token(r: Request):
 
 
 def _entrar(c, resp: Response, r: Request, d):
-    tok, u = seguridad.iniciar_sesion(c, d.get("usuario"), d.get("clave"), r.client.host if r.client else "")
+    tok, u = seguridad.iniciar_sesion(c, d.get("usuario"), d.get("clave"), _ip(r))
+    if tok is None:          # dueño con correo: falta el código; u trae el reto
+        return {"ok": True, "codigo_requerido": True, **u}
+    return _con_cookie(resp, r, tok, u)
+
+
+def _ip(r: Request):
+    return r.client.host if r.client else ""
+
+
+def _con_cookie(resp: Response, r: Request, tok, u):
     resp.set_cookie("gv", tok, httponly=True, samesite="strict", secure=r.url.scheme == "https")
     return {"ok": True, "token": tok, "usuario": u}
+
+
+def _sin_candado_al_fallar(accion):
+    err = None
+    with base.LOCK, base.conectar() as c:
+        try:
+            return accion(c)
+        except ErrorNegocio as e:
+            err = e          # se captura dentro para que la transacción confirme el contador de intentos fallidos
+    time.sleep(0.6)          # fuera del candado: no frena al resto de usuarios
+    raise err
 
 
 @app.get("/api/sesion/estado")
@@ -152,8 +174,13 @@ def estado(r: Request):
 
 @app.post("/api/sesion/entrar")
 def entrar(d: dict, r: Request, resp: Response):
-    with base.LOCK, base.conectar() as c:
-        return _entrar(c, resp, r, d)
+    return _sin_candado_al_fallar(lambda c: _entrar(c, resp, r, d))
+
+
+@app.post("/api/sesion/codigo")
+def codigo(d: dict, r: Request, resp: Response):
+    return _sin_candado_al_fallar(
+        lambda c: _con_cookie(resp, r, *seguridad.verificar_codigo(c, d.get("reto"), d.get("codigo"), _ip(r))))
 
 
 @app.post("/api/sesion/configurar")

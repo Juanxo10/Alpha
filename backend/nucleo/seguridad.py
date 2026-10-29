@@ -4,7 +4,9 @@ import datetime as dt
 import hashlib
 import hmac
 import json
+import logging
 import secrets
+import threading
 import time
 
 from .base import ZONA, ErrorNegocio, ahora, bitacora, config, num, verificar_cadena
@@ -12,6 +14,12 @@ from .base import ZONA, ErrorNegocio, ahora, bitacora, config, num, verificar_ca
 ROLES = {"DUENO": "Dueño", "OPERADOR": "Asistente", "CONSULTA": "Consulta"}
 ABSOLUTA_H = 12
 REFRESCO_S = 30       # la huella de actividad se escribe como máximo cada 30 s: no hay una escritura por petición
+# shortcut: códigos y fallos por IP viven en memoria del proceso (las sesiones sí están en la base); con varias instancias o reinicios, llevarlos a la base
+RETOS = {}
+CODIGO_MIN = 5
+FALLOS_IP = {}
+_LOCK = threading.Lock()
+IP_MAX_FALLOS, IP_VENTANA_S = 10, 600
 
 # Qué puede hacer un operador sin pedir permiso. Todo lo que mueve o corrige dinero pasa por aprobación.
 LIBRE_OPERADOR = {
@@ -37,8 +45,8 @@ def _hash(clave, sal):
 
 
 def validar_clave(clave):
-    if len(clave or "") < 6:
-        raise ErrorNegocio("La clave debe tener al menos 6 caracteres.")
+    if len(clave or "") < 10 or clave.isdigit():
+        raise ErrorNegocio("La clave debe tener al menos 10 caracteres y no ser solo números.")
 
 
 def hay_usuarios(c):
@@ -100,11 +108,21 @@ def _nueva_sesion(c, u, ttl_min=None, interna=False):
     return tok
 
 
+def _fallo_ip(ip):
+    with _LOCK:
+        FALLOS_IP.setdefault(ip, []).append(time.time())
+
+
 def iniciar_sesion(c, usuario, clave, ip=""):
+    """El retraso ante un fallo lo aplica quien llama, fuera del candado y de la transacción."""
     from . import alertas
+    with _LOCK:
+        recientes = FALLOS_IP[ip] = [t for t in FALLOS_IP.get(ip, []) if time.time() - t < IP_VENTANA_S]
+    if len(recientes) >= IP_MAX_FALLOS:
+        raise ErrorNegocio("Demasiados intentos desde este equipo. Espere unos minutos.")
     u = c.execute("SELECT * FROM usuarios WHERE usuario=?", ((usuario or "").strip().lower(),)).fetchone()
     if not u or not u["activo"]:
-        time.sleep(0.6)
+        _fallo_ip(ip)
         raise ErrorNegocio("Usuario o clave incorrectos.")
     if u["bloqueado_hasta"] and u["bloqueado_hasta"] > ahora():
         raise ErrorNegocio(f"Usuario bloqueado por intentos fallidos hasta las {u['bloqueado_hasta'][11:16]}.")
@@ -116,11 +134,59 @@ def iniciar_sesion(c, usuario, clave, ip=""):
             alertas.alertar_duenos(c, "Intentos fallidos de ingreso",
                                    f"El usuario <b>{u['usuario']}</b> lleva {n} intentos fallidos de clave"
                                    f"{' y quedó bloqueado 15 minutos' if bloqueo else ''}. Equipo: {ip or 'local'}.")
-        time.sleep(0.6)
+        _fallo_ip(ip)
         raise ErrorNegocio("Usuario o clave incorrectos." + (" El usuario quedó bloqueado 15 minutos." if bloqueo else ""))
-    c.execute("UPDATE usuarios SET intentos_fallidos=0, bloqueado_hasta=NULL, ultimo_acceso=? WHERE id=?", (ahora(), u["id"]))
+    c.execute("UPDATE usuarios SET intentos_fallidos=0, bloqueado_hasta=NULL WHERE id=?", (u["id"],))
+    cfg = config(c)
+    if u["rol"] == "DUENO" and u["email"] and cfg.get("smtp_usuario") and cfg.get("smtp_clave"):
+        return None, _pedir_codigo(cfg, u)
+    return _abrir(c, u, ip)
+
+
+def _abrir(c, u, ip):
+    c.execute("UPDATE usuarios SET ultimo_acceso=? WHERE id=?", (ahora(), u["id"]))
     bitacora(c, u["nombre"], "INGRESO", None, {"usuario_id": u["id"], "equipo": ip or "local"})
     return _nueva_sesion(c, u), publico(u)
+
+
+def _pedir_codigo(cfg, u):
+    """Segundo factor de los dueños: código de 6 dígitos por correo, 5 minutos y 3 intentos."""
+    from . import alertas
+    reto, codigo = secrets.token_urlsafe(16), f"{secrets.randbelow(10**6):06d}"
+    with _LOCK:
+        for k in [k for k, r in RETOS.items() if r["vence"] < time.time()]:
+            RETOS.pop(k)
+        RETOS[reto] = {"uid": u["id"], "codigo": codigo, "vence": time.time() + CODIGO_MIN * 60, "intentos": 0}
+    cuerpo = f"Su código de ingreso es <b>{codigo}</b>. Vence en {CODIGO_MIN} minutos. Si no fue usted, cambie su clave."
+    # hilo aparte: el SMTP tarda segundos y no debe retener el candado ni la transacción
+    threading.Thread(target=lambda: _enviar_codigo(alertas, cfg, u["email"], cuerpo), daemon=True).start()
+    a, d = u["email"].split("@", 1)
+    return {"reto": reto, "correo": f"{a[:2]}***@{d}"}
+
+
+def _enviar_codigo(alertas, cfg, destino, cuerpo):
+    try:
+        alertas._correo(cfg, destino, f"[{cfg.get('proyecto', 'Loteo')}] Código de ingreso", cuerpo, [])
+    except Exception:  # noqa: BLE001
+        logging.getLogger(__name__).exception("No se pudo enviar el código de ingreso")
+
+
+def verificar_codigo(c, reto, codigo, ip=""):
+    with _LOCK:
+        r = RETOS.get(reto)
+        if r and (r["vence"] < time.time() or r["intentos"] >= 3):
+            RETOS.pop(reto, None)
+            r = None
+        if r:
+            r["intentos"] += 1
+            ok = hmac.compare_digest(str(codigo or "").strip(), r["codigo"])
+            if ok:
+                RETOS.pop(reto, None)
+    if not r or not ok:
+        _fallo_ip(ip)
+        raise ErrorNegocio("Código incorrecto o vencido. Vuelva a ingresar con su usuario y clave." if not r
+                           else "Código incorrecto.")
+    return _abrir(c, c.execute("SELECT * FROM usuarios WHERE id=?", (r["uid"],)).fetchone(), ip)
 
 
 def token_interno(c):
@@ -414,6 +480,7 @@ def acciones(c, sesion, ruta, d):
         if not hmac.compare_digest(_hash(d.get("actual") or "", u["sal"]), u["clave_hash"]):
             raise ErrorNegocio("La clave actual no es correcta.")
         cambiar_clave(c, u["id"], d.get("nueva"))
+        c.execute("DELETE FROM sesiones WHERE usuario_id=? AND tok<>?", (u["id"], _huella(sesion["token"])))   # cierra las demás, conserva esta
         bitacora(c, autor, "CAMBIO_CLAVE", None, {"usuario_id": u["id"]})
         return {"ok": True}
     if ruta == "/api/sesion/vincular":
