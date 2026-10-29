@@ -219,9 +219,13 @@ export function Configuracion({ c, dueno, cerrar, listo, precios }: { c: Datos; 
     <Modal titulo="Configuración" ancho cerrar={cerrar} alEnviar={async (x) => {
       const datos: Datos = {}
       Object.entries(x).forEach(([k, v]) => { datos[k] = typeof v === 'boolean' ? (v ? '1' : '0') : String(v) })
+      const clave = (datos.smtp_clave || '').trim()
+      delete datos.smtp_clave          // la clave va por su ruta aparte (solo dueño) y nunca vuelve al navegador
       Object.keys(datos).forEach((k) => { if (datos[k] === String(c[k] ?? '')) delete datos[k] })
-      if (!Object.keys(datos).length) return cerrar()
-      await api('/api/config', datos); listo(); cerrar(); aviso('Configuración guardada')
+      if (!Object.keys(datos).length && !clave) return cerrar()
+      if (Object.keys(datos).length) await api('/api/config', datos)
+      if (clave) await api('/api/config/secreta', { smtp_clave: clave })
+      listo(); cerrar(); aviso('Configuración guardada')
     }}>
       <div className="subtabs" style={{ padding: 0, position: 'static', marginBottom: 14 }}>
         {pestanas.map(([k, nom]) => <button key={k} type="button" className={tab === k ? 'activo' : ''} onClick={() => setTab(k)}>{nom}</button>)}
@@ -253,7 +257,12 @@ export function Configuracion({ c, dueno, cerrar, listo, precios }: { c: Datos; 
         {n('desistimiento_plazo_dias', 'Plazo para devolver tras un desistimiento (días)')}
         {n('promesa_plazo_escritura_meses', 'Plazo para escriturar tras pagar (meses)')} {t('notaria_escrituracion', 'Notaría para escriturar', { cls: 'c2' })}
       </div>
-      <div className="form-grid" hidden={tab !== 'seguridad'}>{n('sesion_minutos', 'Cerrar sesión tras (minutos sin uso)')}</div>
+      <div className="form-grid" hidden={tab !== 'seguridad'}>{n('sesion_minutos', 'Cerrar sesión tras (minutos sin uso)')}
+        <div className="form-sec">Correo de envío (códigos de ingreso y alertas)</div>
+        {t('smtp_servidor', 'Servidor')} {t('smtp_puerto', 'Puerto')} {t('smtp_usuario', 'Correo de envío', { ayuda: 'Ej.: alphaple.info@gmail.com' })} {t('smtp_remitente', 'Nombre del remitente')}
+        {dueno && <Campo etq={c.smtp_configurado ? 'Contraseña de aplicación (ya guardada; escriba solo para cambiarla)' : 'Contraseña de aplicación de Gmail'} cls="c2">
+          <input type="password" name="smtp_clave" autoComplete="new-password" /></Campo>}
+      </div>
       <div className="form-grid" hidden={tab !== 'respaldos'}>
         {t('carpeta_respaldo_externa', 'Carpeta para la copia diaria', { cls: 'c2', ayuda: 'Una carpeta sincronizada (Google Drive, OneDrive) o una USB. Ej.: G:\\Mi unidad\\Respaldos loteo' })}
         <div className="c2"><button type="button" className="btn sec" onClick={() => api<Datos>('/api/respaldo', {}).then((r) => aviso('Respaldo creado: ' + r.archivo)).catch(falla)}><DatabaseBackup />Hacer respaldo ahora</button></div>
