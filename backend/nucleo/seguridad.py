@@ -7,9 +7,9 @@ import json
 import secrets
 import time
 
-from .base import ErrorNegocio, ahora, bitacora, config, num, verificar_cadena
+from .base import ZONA, ErrorNegocio, ahora, bitacora, config, num, verificar_cadena
 
-ROLES = {"DUENO": "Dueño", "OPERADOR": "Asistente"}
+ROLES = {"DUENO": "Dueño", "OPERADOR": "Asistente", "CONSULTA": "Consulta"}
 ABSOLUTA_H = 12
 REFRESCO_S = 30       # la huella de actividad se escribe como máximo cada 30 s: no hay una escritura por petición
 
@@ -110,7 +110,7 @@ def iniciar_sesion(c, usuario, clave, ip=""):
         raise ErrorNegocio(f"Usuario bloqueado por intentos fallidos hasta las {u['bloqueado_hasta'][11:16]}.")
     if not hmac.compare_digest(_hash(clave or "", u["sal"]), u["clave_hash"]):
         n = (u["intentos_fallidos"] or 0) + 1
-        bloqueo = (dt.datetime.now() + dt.timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S") if n >= 5 else None
+        bloqueo = (dt.datetime.now(ZONA) + dt.timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S") if n >= 5 else None
         c.execute("UPDATE usuarios SET intentos_fallidos=?, bloqueado_hasta=? WHERE id=?", (0 if bloqueo else n, bloqueo, u["id"]))
         if n >= 3:
             alertas.alertar_duenos(c, "Intentos fallidos de ingreso",

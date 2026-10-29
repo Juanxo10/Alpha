@@ -163,12 +163,15 @@ class ErrorNegocio(Exception):
 
 
 # ---------------------------------------------------------------- utilidades
+ZONA = dt.timezone(dt.timedelta(hours=-5))      # Colombia no usa horario de verano; sin esto cada máquina pone su propia hora
+
+
 def ahora():
-    return dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return dt.datetime.now(ZONA).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def hoy():
-    return dt.date.today()
+    return dt.datetime.now(ZONA).date()
 
 
 def fecha(s):
@@ -274,6 +277,11 @@ class ConexionPG:
         with self.con.cursor() as cur:
             cur.executemany(sql, filas)
 
+    def bloquear(self, clave):
+        """Candado de Postgres hasta confirmar: serializa a todas las instancias (el RLock solo vale dentro de un proceso)."""
+        self._abrir("LOCK")
+        self.con.execute("SELECT pg_advisory_xact_lock(%s)", (clave,))
+
     def executescript(self, sql):
         self._abrir(sql)
         self.con.execute(sql)
@@ -335,8 +343,12 @@ def _sello(prev, fecha_, usuario, accion, id_lote, detalle):
     return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 
+_CLAVE_BITACORA = 7_300_001
+
+
 def bitacora(c, usuario, accion, id_lote, detalle):
     """Registra un movimiento encadenado al anterior: si alguien altera la bitácora, la cadena se rompe."""
+    c.bloquear(_CLAVE_BITACORA)       # sin esto, dos instancias leen el mismo hash previo y la cadena se bifurca
     prev = c.execute("SELECT hash FROM bitacora ORDER BY id DESC LIMIT 1").fetchone()
     prev = prev[0] if prev else ""
     f = ahora()

@@ -1,5 +1,6 @@
 """API del geovisor en FastAPI. La lógica de negocio sigue en nucleo/ (la misma del servidor anterior)."""
 import hmac
+import logging
 import os
 import re
 import sys
@@ -71,6 +72,15 @@ async def _permiso(_: Request, e: PermissionError):
     r = JSONResponse({"error": str(e), "sesion": False}, 401)
     r.delete_cookie("gv")
     return r
+
+
+@app.exception_handler(KeyError)
+@app.exception_handler(ValueError)
+@app.exception_handler(TypeError)
+@app.exception_handler(AttributeError)
+async def _dato_invalido(_: Request, e: Exception):
+    logging.getLogger("uvicorn.error").warning("Dato no válido en la petición", exc_info=e)   # queda el rastro; el usuario recibe un 400, no un 500
+    return JSONResponse({"error": "Dato no válido o faltante: revise el formulario."}, 400)
 
 
 # ---------------------------------------------------------------- operaciones de negocio

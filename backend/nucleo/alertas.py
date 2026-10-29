@@ -99,14 +99,14 @@ def revisar_horario(c, sesion, ruta):
     if sesion["rol"] != "OPERADOR":
         return
     cfg = config(c)
-    h = dt.datetime.now().strftime("%H:%M")
-    fuera = h < (cfg.get("horario_inicio") or "00:00") or h > (cfg.get("horario_fin") or "23:59") or dt.date.today().weekday() == 6
-    clave = f"horario:{sesion['usuario_id']}:{dt.datetime.now():%Y%m%d%H}"
+    h = dt.datetime.now(base.ZONA).strftime("%H:%M")
+    fuera = h < (cfg.get("horario_inicio") or "00:00") or h > (cfg.get("horario_fin") or "23:59") or hoy().weekday() == 6
+    clave = f"horario:{sesion['usuario_id']}:{dt.datetime.now(base.ZONA):%Y%m%d%H}"
     if fuera and not marca_hecha(c, clave):
         marcar(c, clave)
         alertar_duenos(c, "Operación fuera de horario",
                        f"{html.escape(sesion['nombre'])} está registrando operaciones a las {h}"
-                       f"{' (domingo)' if dt.date.today().weekday() == 6 else ''}: {html.escape(ruta)}.")
+                       f"{' (domingo)' if hoy().weekday() == 6 else ''}: {html.escape(ruta)}.")
 
 
 CRITICAS_DUENO = {"/api/pago/anular", "/api/venta/desistir", "/api/precios/masivo", "/api/comision/pagar",
@@ -340,7 +340,7 @@ def _hilo_telegram():
 def _tarea_diaria():
     from .seguridad import verificar_integridad
     hoy_ = hoy().isoformat()
-    h = dt.datetime.now().strftime("%H:%M")
+    h = dt.datetime.now(base.ZONA).strftime("%H:%M")
     with base.LOCK, base.conectar() as c:
         cfg = config(c)
         if ACTIVAS and h >= (cfg.get("recordatorio_hora") or "08:00") and not marca_hecha(c, f"recordatorios:{hoy_}"):
@@ -354,7 +354,7 @@ def _tarea_diaria():
             marcar(c, f"integridad:{hoy_}")
             revisar_integridad(c, verificar_integridad(c))
         c.execute("UPDATE solicitudes SET estado='VENCIDA', resuelto_en=? WHERE estado='PENDIENTE' AND creado < ?",
-                  (ahora(), (dt.datetime.now() - dt.timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")))
+                  (ahora(), (dt.datetime.now(base.ZONA) - dt.timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")))
 
 
 def revisar_integridad(c, integ):

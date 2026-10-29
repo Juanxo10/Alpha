@@ -4,7 +4,7 @@ import { api, aviso, falla } from './api'
 import { fecha, fmtN, pesos } from './formato'
 import { Campo, Cargando, Modal, useApi, Vacio, type Datos } from './ui'
 
-export const ROLES: Record<string, string> = { DUENO: 'Dueño', OPERADOR: 'Asistente' }
+export const ROLES: Record<string, string> = { DUENO: 'Dueño', OPERADOR: 'Asistente', CONSULTA: 'Consulta' }
 const hora = (s: string) => s.slice(11, 16)
 
 // ------------------------------------------------------------------ aprobaciones

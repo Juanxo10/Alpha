@@ -32,7 +32,7 @@ const GRUPOS: { ic: ComponentType; t: string; items: Item[] }[] = [
     { v: 'usuarios', ic: UserCog, t: 'Usuarios', s: 'Quién entra y qué puede hacer', solo: 'DUENO' },
     { v: 'auditoria', ic: ScrollText, t: 'Auditoría', s: 'Bitácora sellada e integridad', solo: 'DUENO,CONSULTA' }] },
 ]
-const ROLES: Record<string, string> = { DUENO: 'Dueño', OPERADOR: 'Asistente' }
+const ROLES: Record<string, string> = { DUENO: 'Dueño', OPERADOR: 'Asistente', CONSULTA: 'Consulta' }
 
 const norm = (t?: string | null) => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 function buscarLotes(lotes: Lote[], q: string) {
