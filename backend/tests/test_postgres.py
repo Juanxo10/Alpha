@@ -117,6 +117,7 @@ def test_codigo_por_correo_para_todos_los_roles(plataforma, monkeypatch):
     with base.conectar() as c:
         base.set_config(c, "smtp_usuario", "x@x.com")
         base.set_config(c, "smtp_clave", "x")
+        base.set_config(c, "codigo_correo", "1")
         c.execute("UPDATE usuarios SET email='ana@x.com' WHERE usuario='ana'")
     cuerpo = {"usuario": "ana", "clave": "secreta1234"}
     try:
@@ -142,3 +143,4 @@ def test_codigo_por_correo_para_todos_los_roles(plataforma, monkeypatch):
         with base.conectar() as c:
             base.set_config(c, "smtp_usuario", "")
             base.set_config(c, "smtp_clave", "")
+            base.set_config(c, "codigo_correo", "0")

@@ -167,7 +167,7 @@ def estado(r: Request):
         return {"configurado": configurado,
                 "sesion": s and {k: s[k] for k in ("usuario_id", "nombre", "usuario", "rol")},
                 "proyecto": config(c).get("proyecto"),
-                "pide_correo": bool(config(c).get("smtp_usuario") and config(c).get("smtp_clave")),
+                "pide_correo": seguridad.pide_codigo(config(c)),
                 "marca": {"empresa": cli.get("empresa") or config(c).get("proyecto"),
                           "logo": os.path.exists(os.path.join(base.MARCA, "logo_claro.png")),
                           "pide_codigo": not configurado and bool(cli.get("codigo_instalacion"))}}

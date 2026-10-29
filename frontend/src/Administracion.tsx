@@ -258,6 +258,7 @@ export function Configuracion({ c, dueno, cerrar, listo, precios }: { c: Datos; 
         {n('promesa_plazo_escritura_meses', 'Plazo para escriturar tras pagar (meses)')} {t('notaria_escrituracion', 'Notaría para escriturar', { cls: 'c2' })}
       </div>
       <div className="form-grid" hidden={tab !== 'seguridad'}>{n('sesion_minutos', 'Cerrar sesión tras (minutos sin uso)')}
+        {sw('codigo_correo', 'Pedir código por correo al iniciar sesión (requiere el correo de envío y que cada usuario tenga correo)')}
         <div className="form-sec">Correo de envío (códigos de ingreso y alertas)</div>
         {t('smtp_servidor', 'Servidor')} {t('smtp_puerto', 'Puerto')} {t('smtp_usuario', 'Usuario SMTP', { ayuda: 'Resend: resend. Gmail: su correo.' })} {t('smtp_desde', 'Correo remitente', { ayuda: 'Ej.: no-responder@sudominio.com (del dominio verificado). Vacío = el usuario SMTP.' })} {t('smtp_remitente', 'Nombre del remitente')}
         {dueno && <Campo etq={c.smtp_configurado ? 'Contraseña de aplicación (ya guardada; escriba solo para cambiarla)' : 'Contraseña de aplicación de Gmail'} cls="c2">

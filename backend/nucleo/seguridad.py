@@ -44,6 +44,11 @@ def _hash(clave, sal):
     return hashlib.pbkdf2_hmac("sha256", clave.encode("utf-8"), bytes.fromhex(sal), 240_000).hex()
 
 
+def pide_codigo(cfg):
+    """El código por correo es opcional: un interruptor en Config > Seguridad y el SMTP listo."""
+    return cfg.get("codigo_correo") == "1" and bool(cfg.get("smtp_usuario") and cfg.get("smtp_clave"))
+
+
 def validar_clave(clave):
     if len(clave or "") < 10 or clave.isdigit():
         raise ErrorNegocio("La clave debe tener al menos 10 caracteres y no ser solo números.")
@@ -66,7 +71,7 @@ def guardar_usuario(c, autor, d):
     if " " in usuario:
         raise ErrorNegocio("El usuario no puede tener espacios.")
     cfg = config(c)
-    if cfg.get("smtp_usuario") and cfg.get("smtp_clave") and "@" not in (d.get("email") or ""):
+    if pide_codigo(cfg) and "@" not in (d.get("email") or ""):
         raise ErrorNegocio("El correo es obligatorio: el ingreso se confirma con un código enviado a ese correo.")
     otro = c.execute("SELECT id FROM usuarios WHERE usuario=? AND id<>?", (usuario, int(d.get("id") or 0))).fetchone()
     if otro:
@@ -141,7 +146,7 @@ def iniciar_sesion(c, usuario, clave, ip=""):
         raise ErrorNegocio("Usuario o clave incorrectos." + (" El usuario quedó bloqueado 15 minutos." if bloqueo else ""))
     c.execute("UPDATE usuarios SET intentos_fallidos=0, bloqueado_hasta=NULL WHERE id=?", (u["id"],))
     cfg = config(c)
-    if cfg.get("smtp_usuario") and cfg.get("smtp_clave"):      # sin SMTP no hay cómo enviar el código: solo así se puede entrar a configurarlo
+    if pide_codigo(cfg):
         if not u["email"]:
             raise ErrorNegocio("Su usuario no tiene correo registrado. Pídale al dueño que lo agregue.")
         return None, _pedir_codigo(c, cfg, u)
