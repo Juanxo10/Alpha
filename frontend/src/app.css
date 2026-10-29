@@ -287,6 +287,7 @@ table.datos td .rojo { color: var(--peligro); font-weight: 700; }
 .modal-cuerpo { padding: 14px 20px; overflow-y: auto; min-height: 0; flex: 1 1 auto; }
 .modal-pie { display: flex; justify-content: flex-end; flex: none; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--borde); background: var(--sup-2); border-radius: 0 0 14px 14px; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 14px; align-items: start; } /* 2 columnas en ventana normal, 3 en ancha */
+.form-grid[hidden] { display: none; } /* sin esto el display:grid anula hidden y las pestañas de Configuración no cambian */
 .form-grid .c2 { grid-column: 1 / -1; }
 .form-grid .c3 { grid-column: span 1; }
 .form-sec { font-family: var(--f-tit); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--menta-osc); grid-column: 1 / -1; margin-top: 4px; padding-bottom: 4px; border-bottom: 1px solid var(--borde-2); }
