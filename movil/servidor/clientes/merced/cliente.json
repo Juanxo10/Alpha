@@ -1,0 +1,17 @@
+{
+  "id": "merced",
+  "empresa": "La Merced",
+  "nombre_corto": "La Merced",
+  "proyecto": "La Merced",
+  "subtitulo": "Control de ventas y cartera",
+  "ciudad": "Villavicencio, Meta",
+  "colores": {
+    "primario": "#173F35",
+    "acento": "#7FD8A6"
+  },
+  "crs_nombre": "MAGNA-SIRGAS / Colombia Bogotá (EPSG:3116)",
+  "dominio": "",
+  "capas_extra": [],
+  "codigo_instalacion": "",
+  "notas": "Primer cliente (piloto). Colores provisionales hasta recibir el logo y la paleta de la empresa."
+}

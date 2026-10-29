@@ -1,0 +1,2 @@
+/* El original usaba body como contenedor; React monta todo dentro de #root. */
+#root { display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%; }

@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "C:\Users\juanp\OneDrive\Documentos\movil\servidor\servidor.py", line 8, in <module>
+    import main as api  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\juanp\OneDrive\Documentos\movil\servidor\backend\main.py", line 13, in <module>
+    from nucleo import (alertas, base, bienes, bloques, cartera, cobranza, comisiones, contratos, desistimientos, documentos, exportar,
+  File "C:\Users\juanp\OneDrive\Documentos\movil\servidor\backend\nucleo\finanzas.py", line 8, in <module>
+    from . import extractos
+ImportError: cannot import name 'extractos' from 'nucleo' (C:\Users\juanp\OneDrive\Documentos\movil\servidor\backend\nucleo\__init__.py)
