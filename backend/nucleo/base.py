@@ -148,7 +148,7 @@ CONFIG_INICIAL = {
     "sesion_minutos": "45", "horario_inicio": "07:00", "horario_fin": "19:00", "umbral_efectivo": "5000000",
     "alertas_acciones_duenos": "1", "resumen_diario_hora": "18:00",
     "telegram_token": "", "smtp_servidor": "smtp.gmail.com", "smtp_puerto": "587", "smtp_usuario": "",
-    "smtp_clave": "", "smtp_remitente": "",
+    "smtp_clave": "", "smtp_remitente": "", "smtp_desde": "",
     # recordatorios a compradores
     "recordatorios_activos": "0", "recordatorio_dias_antes": "3", "recordatorio_mora_dias": "1,15,30",
     "recordatorio_hora": "08:00", "confirmacion_pago_email": "0",

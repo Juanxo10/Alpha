@@ -229,7 +229,7 @@ def _telegram(token, metodo, datos):
 def _correo(cfg, destino, asunto, cuerpo_html, adjuntos):
     msg = EmailMessage()
     msg["Subject"] = asunto
-    msg["From"] = f"{cfg.get('smtp_remitente') or cfg.get('proyecto')} <{cfg['smtp_usuario']}>"
+    msg["From"] = f"{cfg.get('smtp_remitente') or cfg.get('proyecto')} <{cfg.get('smtp_desde') or cfg['smtp_usuario']}>"      # smtp_desde: con Resend/Brevo el usuario SMTP no es un correo
     msg["To"] = destino
     texto = html.unescape(cuerpo_html.replace("<br>", "\n").replace("\n\n", "\n"))
     for t in ("<b>", "</b>", "<i>", "</i>"):

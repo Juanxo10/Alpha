@@ -259,7 +259,7 @@ export function Configuracion({ c, dueno, cerrar, listo, precios }: { c: Datos; 
       </div>
       <div className="form-grid" hidden={tab !== 'seguridad'}>{n('sesion_minutos', 'Cerrar sesión tras (minutos sin uso)')}
         <div className="form-sec">Correo de envío (códigos de ingreso y alertas)</div>
-        {t('smtp_servidor', 'Servidor')} {t('smtp_puerto', 'Puerto')} {t('smtp_usuario', 'Correo de envío', { ayuda: 'Ej.: alphaple.info@gmail.com' })} {t('smtp_remitente', 'Nombre del remitente')}
+        {t('smtp_servidor', 'Servidor')} {t('smtp_puerto', 'Puerto')} {t('smtp_usuario', 'Usuario SMTP', { ayuda: 'Resend: resend. Gmail: su correo.' })} {t('smtp_desde', 'Correo remitente', { ayuda: 'Ej.: no-responder@sudominio.com (del dominio verificado). Vacío = el usuario SMTP.' })} {t('smtp_remitente', 'Nombre del remitente')}
         {dueno && <Campo etq={c.smtp_configurado ? 'Contraseña de aplicación (ya guardada; escriba solo para cambiarla)' : 'Contraseña de aplicación de Gmail'} cls="c2">
           <input type="password" name="smtp_clave" autoComplete="new-password" /></Campo>}
       </div>
