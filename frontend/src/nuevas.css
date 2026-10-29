@@ -167,3 +167,4 @@ body:has(.modal-fondo.visible) .avisos { top: 20px; bottom: auto; right: 50%; tr
 .conc-estado.grande { align-self: stretch; width: 100%; box-sizing: border-box; }
 .conc-tabs .badge-n { background: #E2E8F0; color: #334155; }
 .conc-tabs button.activo .badge-n { background: var(--teal); color: #fff; }
+.conc-acc { display: flex; gap: 6px; justify-content: flex-end; }

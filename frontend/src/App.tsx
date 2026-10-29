@@ -150,7 +150,7 @@ export default function App() {
       case 'comisionistas': return <Comisionistas abrir={irALote} config={config} />
       case 'gastos': return <Gastos rol={rol} config={config} />
       case 'flujo': return <Flujo />
-      case 'conciliacion': return <Conciliacion />
+      case 'conciliacion': return <Conciliacion config={config} />
       case 'contratos': return <Contratos abrir={irALote} config={config} rol={rol} />
       case 'bloques': return <Bloques abrir={irALote} config={config} rol={rol} seleccionar={() => { setAbrir(null); setSelMapa(true); setVista('mapa') }} />
       case 'bienes': return <Bienes abrir={irALote} config={config} />

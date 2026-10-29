@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, CheckCheck, CircleCheck, Eye, FileSpreadsheet, GitCompare, Landmark, RotateCcw, ScrollText, TriangleAlert, Upload, X } from 'lucide-react'
+import { ArrowRight, CheckCheck, CircleCheck, Eye, FileSpreadsheet, GitCompare, Landmark, Printer, RotateCcw, ScrollText, TriangleAlert, Upload, X } from 'lucide-react'
 import { api, aviso, falla } from './api'
-import { fecha, fmtN, pesos } from './formato'
-import { Cargando, Kpi, useApi, Vacio, type Datos } from './ui'
+import { fecha, fechaLarga, fmtN, pesos } from './formato'
+import { cabecera, esc, imprimir, PIE_SISTEMA } from './imprimir'
+import { Cargando, hoyISO, Kpi, useApi, Vacio, type Datos } from './ui'
 
 type Rol = 'fecha' | 'valor' | 'desc'
 const ROLES_COL: [Rol, string][] = [['fecha', 'Fecha'], ['valor', 'Valor (+ entra, − sale)'], ['desc', 'Descripción']]
@@ -11,6 +12,43 @@ const TIPO_REG: Record<string, string> = { pagos: 'Recibo', gastos: 'Gasto', pag
 
 const reg = (x: Datos) => `N° ${String(x.numero).padStart(6, '0')} · ${x.tercero}${x.tabla === 'pagos' && x.id_lote ? ' · ' + x.id_lote : ''}`
 const dias = (a: string, b: string) => Math.round(Math.abs(+new Date(a + 'T12:00') - +new Date(b + 'T12:00')) / 864e5)
+
+function imprimirConciliacion(d: Datos, c: Datos) {
+  const h = d.conciliacion, t = d.totales
+  imprimir(`Conciliación bancaria N° ${h.id}`, `${cabecera(c, 'CONCILIACIÓN BANCARIA', `N° ${h.id}`, `${esc(c.ciudad || '')}, ${fechaLarga(h.fecha)}`)}
+    <div class="caja">
+      <div class="fila"><span>Banco</span><b>${esc(h.banco || '—')}</b></div>
+      <div class="fila"><span>Extracto</span><b>${esc(h.archivo || '—')}</b></div>
+      <div class="fila"><span>Conciliado por</span><b>${esc(h.usuario)}</b></div>
+      <div class="fila"><span>Registros</span><b>${d.registros.length} conciliados de ${h.movimientos} movimientos del extracto</b></div></div>
+    <div class="resumen" style="grid-template-columns:repeat(3,1fr)"><div><small>Entradas</small><b>${pesos(t.ingresos)}</b></div>
+      <div><small>Salidas</small><b>${pesos(t.egresos)}</b></div><div><small>Neto</small><b>${pesos(t.neto)}</b></div></div>
+    <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Registro</th><th>Medio</th><th class="d">Valor</th></tr></thead><tbody>
+      ${d.registros.map((x: Datos) => `<tr><td>${fecha(x.fecha)}</td><td>${TIPO_REG[x.tabla]}</td><td>${esc(reg(x))}</td><td>${esc(`${x.medio} ${x.referencia || ''}`)}</td>
+        <td class="d ${x.valor < 0 ? 'rojo' : ''}">${pesos(x.valor)}</td></tr>`).join('')}
+      <tr class="tot"><td colspan="4">Neto conciliado</td><td class="d">${pesos(t.neto)}</td></tr></tbody></table>
+    <div class="firmas"><div>Elaboró</div><div>Revisó</div></div><div class="pie">${PIE_SISTEMA}</div>`)
+}
+
+function imprimirCruce(x: Datos, banco: string, archivo: string, c: Datos) {
+  const filas = (l: Datos[], reg_: (m: Datos) => string) => l.map((m) => `<tr><td>${fecha(m.fecha)}</td><td>${esc(m.descripcion)}</td>
+    <td class="d ${m.valor < 0 ? 'rojo' : ''}">${pesos(m.valor)}</td><td>${esc(reg_(m))}</td></tr>`).join('')
+  const sec = (tit: string, cols: string, cuerpo: string) => cuerpo ? `<h3>${tit}</h3><table><thead><tr>${cols}</tr></thead><tbody>${cuerpo}</tbody></table>` : ''
+  const colsBanco = '<th>Fecha</th><th>Descripción del banco</th><th class="d">Valor</th><th>'
+  const quien = (p: Datos) => `${TIPO_REG[p.registro.tabla]} ${reg(p.registro)}`
+  imprimir(`Cruce con el extracto ${archivo}`, `${cabecera(c, 'CRUCE CON EL EXTRACTO BANCARIO', '', `${esc(c.ciudad || '')}, ${fechaLarga(hoyISO())}`)}
+    <div class="caja">
+      <div class="fila"><span>Banco</span><b>${esc(banco || '—')}</b></div>
+      <div class="fila"><span>Extracto</span><b>${esc(archivo)}</b></div>
+      <div class="fila"><span>Periodo</span><b>${fecha(x.periodo[0])} al ${fecha(x.periodo[1])} · ${x.movimientos} movimientos</b></div></div>
+    <div class="resumen"><div><small>Coinciden</small><b>${x.pares.length}</b></div><div><small>En el banco, sin registro</small><b>${x.sin_registro.length}</b></div>
+      <div><small>Ya conciliados</small><b>${x.ya_conciliados.length}</b></div><div><small>Registrados, no en el banco</small><b>${x.sin_extracto.length}</b></div></div>
+    ${sec('Movimientos que coinciden', colsBanco + 'Registro en el sistema</th>', filas(x.pares.map((p: Datos) => ({ ...p.movimiento, q: quien(p) })), (m) => m.q))}
+    ${sec('En el banco, sin registro en el sistema', colsBanco + 'Observación</th>', filas(x.sin_registro, (m) => (m.valor > 0 ? 'Entrada sin recibo' : 'Salida sin comprobante')))}
+    ${sec('Registrados en el sistema, no aparecen en el banco', colsBanco + 'Registro</th>', filas(x.sin_extracto.map((r: Datos) => ({ fecha: r.fecha, descripcion: `${TIPO_REG[r.tabla]} ${reg(r)}`, valor: r.valor, q: `${r.medio} ${r.referencia || ''}` })), (m) => m.q))}
+    ${sec('Ya conciliados antes', colsBanco + 'Conciliado en</th>', filas(x.ya_conciliados.map((p: Datos) => ({ ...p.movimiento, q: p.registro.conciliacion_ref || '' })), (m) => m.q))}
+    <div class="firmas"><div>Elaboró</div><div>Revisó</div></div><div class="pie">${PIE_SISTEMA}</div>`)
+}
 
 // ---- lectura del extracto en el navegador (para mostrar qué se entendió antes de cruzar) ----
 function partir(linea: string, sep: string) {
@@ -80,7 +118,7 @@ function Pasos({ paso }: { paso: number }) {
     <div key={k} className={`conc-paso ${k < paso ? 'hecho' : k === paso ? 'activo' : ''}`}><b>{k < paso ? <CheckCheck size={14} /> : k + 1}</b>{x}</div>))}</div>
 }
 
-function DetalleConciliacion({ id, cerrar }: { id: number; cerrar: () => void }) {
+function DetalleConciliacion({ id, cerrar, config }: { id: number; cerrar: () => void; config: Datos }) {
   const { d, error } = useApi<Datos>(`/api/conciliacion/detalle?id=${id}`)
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrar() }
@@ -111,13 +149,14 @@ function DetalleConciliacion({ id, cerrar }: { id: number; cerrar: () => void })
                       <td>{reg(x)}</td><td>{x.medio} {x.referencia}</td><td className="d">{pesos(x.valor)}</td></tr>))}</tbody></table>)}
             </>)}
         </div>
-        <div className="modal-pie"><button type="button" className="btn sec" onClick={cerrar}>Cerrar</button></div>
+        <div className="modal-pie"><button type="button" className="btn sec" onClick={cerrar}>Cerrar</button>
+          <button type="button" className="btn pri" disabled={!d} onClick={() => imprimirConciliacion(d!, config)}><Printer />Imprimir / PDF</button></div>
       </div>
     </div>
   )
 }
 
-export default function Conciliacion() {
+export default function Conciliacion({ config }: { config: Datos }) {
   const { d: r, error, recargar } = useApi<Datos>('/api/conciliacion')
   const [vista, setVista] = useState<'conciliar' | 'historial'>('conciliar')
   const [banco, setBanco] = useState('')
@@ -168,6 +207,9 @@ export default function Conciliacion() {
     if (rol) nuevo[k] = rol; else delete nuevo[k]
     setRoles(nuevo)
   }
+  async function imprimirId(id: number) {
+    try { imprimirConciliacion(await api<Datos>(`/api/conciliacion/detalle?id=${id}`), config) } catch (e) { falla(e) }
+  }
   const reiniciar = () => { setExt(null); setCruce(null); setHecha(null); setSel([]) }
 
   async function analizar() {
@@ -214,6 +256,7 @@ export default function Conciliacion() {
           <div className="tarjeta conc-exito"><CircleCheck size={34} />
             <div><h3>Conciliación N° {hecha.id} guardada</h3><p>{hecha.n} registros quedaron marcados como conciliados.</p></div>
             <button className="btn sec" onClick={() => setVer(hecha.id)}><Eye />Ver detalle</button>
+            <button className="btn sec" onClick={() => void imprimirId(hecha.id)}><Printer />Imprimir / PDF</button>
             <button className="btn pri" onClick={reiniciar}><RotateCcw />Conciliar otro extracto</button></div>)}
 
         {!cruce && !hecha && (
@@ -294,6 +337,7 @@ export default function Conciliacion() {
           </div>
           <div className="conc-barra">
             <div><b>{elegidos.length}</b> de {cruce.pares.length} seleccionados · entradas <b>{pesos(entra)}</b> · salidas <b>{pesos(sale)}</b></div>
+            <button className="btn sec" onClick={() => imprimirCruce(cruce, banco, ext?.nombre ?? '', config)}><Printer />Imprimir resultado</button>
             <button className="btn sec" onClick={reiniciar}>Cancelar</button>
             <button className="btn acento" disabled={!elegidos.length} onClick={confirmar}><CheckCheck />Confirmar conciliación ({elegidos.length})</button>
           </div>
@@ -307,10 +351,11 @@ export default function Conciliacion() {
             <table className="datos"><thead><tr><th>N°</th><th>Fecha</th><th>Banco</th><th>Archivo</th><th className="d">Movimientos</th><th className="d">Conciliados</th><th>Usuario</th><th /></tr></thead>
               <tbody>{hist.map((h) => (
                 <tr key={h.id} className="conc-fila-h" onClick={() => setVer(h.id)}><td><b>#{h.id}</b></td><td>{fecha(h.fecha)}</td><td>{h.banco}</td><td>{h.archivo}</td>
-                  <td className="d">{h.movimientos}</td><td className="d">{h.conciliados}</td><td>{h.usuario}</td><td><button className="btn sec" onClick={(e) => { e.stopPropagation(); setVer(h.id) }}><Eye />Ver</button></td></tr>))}</tbody></table>
+                  <td className="d">{h.movimientos}</td><td className="d">{h.conciliados}</td><td>{h.usuario}</td><td className="conc-acc"><button className="btn sec" onClick={(e) => { e.stopPropagation(); setVer(h.id) }}><Eye />Ver</button>
+                    <button className="btn sec" title="Imprimir o descargar PDF" onClick={(e) => { e.stopPropagation(); void imprimirId(h.id) }}><Printer /></button></td></tr>))}</tbody></table>
             {!hist.length && <Vacio Ic={Landmark} t="Ninguna conciliación coincide con la búsqueda." />}</>)}
         </div>)}
-      {ver !== null && <DetalleConciliacion id={ver} cerrar={() => setVer(null)} />}
+      {ver !== null && <DetalleConciliacion id={ver} cerrar={() => setVer(null)} config={config} />}
     </div>
   )
 }
