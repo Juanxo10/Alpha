@@ -117,6 +117,8 @@ def flujo(c, meses_futuros=18):
 
 # ---------------------------------------------------------------- conciliación bancaria
 def _valor(txt):
+    if re.search(r"[A-Za-z]", re.sub(r"(?i)cop|usd|cr|db", "", str(txt or ""))):
+        return None      # un monto no lleva letras: así "G42 PROVEEDOR 42" no se lee como 4.242 pesos
     t = re.sub(r"[^\d,.\-]", "", str(txt or ""))
     if not t or t in "-.,":
         return None
@@ -217,24 +219,49 @@ def analizar_extracto(c, d):
 
 
 def confirmar_conciliacion(c, usuario, d):
+    if not d.get("pares"):
+        raise ErrorNegocio("Seleccione al menos un movimiento para conciliar.")
+    cid = c.execute("INSERT INTO conciliaciones (fecha, banco, archivo, movimientos, conciliados, usuario, creado) VALUES (?,?,?,?,?,?,?)",
+                    (hoy().isoformat(), d.get("banco") or "", d.get("archivo") or "", int(d.get("movimientos") or 0), 0, usuario,
+                     ahora())).lastrowid
+    ref = f"#{cid} · {d.get('banco') or 'Banco'} · {d.get('archivo') or 'extracto'} · {hoy():%Y-%m-%d}"    # el # permite ver luego qué quedó en cada conciliación
     n = 0
-    ref = f"{d.get('banco') or 'Banco'} · {d.get('archivo') or 'extracto'} · {hoy():%Y-%m-%d}"
-    for p in d.get("pares", []):
+    for p in d["pares"]:
         tabla = p.get("tabla")
         if tabla not in ("pagos", "gastos", "pagos_comision"):
             continue
         n += c.execute(f"UPDATE {tabla} SET conciliado=1, conciliacion_ref=? WHERE id=? AND COALESCE(conciliado,0)=0",
                        (ref, int(p["id"]))).rowcount
-    c.execute("INSERT INTO conciliaciones (fecha, banco, archivo, movimientos, conciliados, usuario, creado) VALUES (?,?,?,?,?,?,?)",
-              (hoy().isoformat(), d.get("banco") or "", d.get("archivo") or "", int(d.get("movimientos") or 0), n, usuario, ahora()))
-    bitacora(c, usuario, "CONCILIACION", None, {"banco": d.get("banco"), "archivo": d.get("archivo"), "conciliados": n})
-    return {"ok": True, "conciliados": n}
+    c.execute("UPDATE conciliaciones SET conciliados=? WHERE id=?", (n, cid))
+    bitacora(c, usuario, "CONCILIACION", None, {"id": cid, "banco": d.get("banco"), "archivo": d.get("archivo"), "conciliados": n})
+    return {"ok": True, "conciliados": n, "id": cid}
+
+
+def detalle_conciliacion(c, cid):
+    """Los registros que quedaron conciliados en una conciliación. Las anteriores a la numeración se reconocen por banco, archivo y fecha."""
+    h = c.execute("SELECT * FROM conciliaciones WHERE id=?", (cid,)).fetchone()
+    if not h:
+        raise ErrorNegocio("Conciliación no encontrada.")
+    par = (f"#{cid} · %", f"{h['banco'] or 'Banco'} · {h['archivo'] or 'extracto'} · {h['fecha']}")
+    cond = "conciliacion_ref LIKE ? OR conciliacion_ref = ?"
+    regs = [dict(r) | {"tabla": "pagos"} for r in c.execute(
+        "SELECT p.id, p.recibo numero, p.fecha, p.valor, p.medio, p.referencia, p.id_lote, cl.nombre tercero FROM pagos p "
+        "JOIN ventas v ON v.id=p.venta_id JOIN clientes cl ON cl.id=v.cliente_id WHERE p." + cond.replace(" OR ", " OR p."), par)]
+    regs += [dict(r) | {"tabla": "gastos", "valor": -r["valor_neto"]} for r in c.execute(
+        "SELECT id, comprobante numero, fecha, valor_neto, medio, referencia, proveedor tercero FROM gastos WHERE " + cond, par)]
+    regs += [dict(r) | {"tabla": "pagos_comision", "valor": -r["valor_neto"]} for r in c.execute(
+        "SELECT p.id, p.comprobante numero, p.fecha, p.valor_neto, p.medio, p.referencia, cm.nombre tercero FROM pagos_comision p "
+        "JOIN comisionistas cm ON cm.id=p.comisionista_id WHERE p." + cond.replace(" OR ", " OR p."), par)]
+    regs.sort(key=lambda r: (r["fecha"], r["numero"]))
+    ing = sum(r["valor"] for r in regs if r["valor"] > 0)
+    egr = -sum(r["valor"] for r in regs if r["valor"] < 0)
+    return {"conciliacion": dict(h), "registros": regs, "totales": {"ingresos": ing, "egresos": egr, "neto": ing - egr}}
 
 
 def resumen_conciliacion(c):
     q = lambda sql: c.execute(sql).fetchone()[0]  # noqa: E731
     return {
-        "historial": [dict(r) for r in c.execute("SELECT * FROM conciliaciones ORDER BY id DESC LIMIT 20")],
+        "historial": [dict(r) for r in c.execute("SELECT * FROM conciliaciones ORDER BY id DESC LIMIT 100")],
         "pagos_pendientes": q("SELECT COUNT(*) FROM pagos WHERE anulado=0 AND medio<>'Efectivo' AND COALESCE(conciliado,0)=0"),
         "pagos_conciliados": q("SELECT COUNT(*) FROM pagos WHERE anulado=0 AND COALESCE(conciliado,0)=1"),
         "egresos_pendientes": q("SELECT COUNT(*) FROM gastos WHERE anulado=0 AND medio<>'Efectivo' AND COALESCE(conciliado,0)=0")

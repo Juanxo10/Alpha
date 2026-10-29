@@ -245,6 +245,7 @@ def _lecturas(c, s, q):
         "gastos": lambda: {"gastos": finanzas.listar_gastos(c), "categorias": finanzas.CATEGORIAS},
         "flujo": lambda: finanzas.flujo(c),
         "conciliacion": lambda: finanzas.resumen_conciliacion(c),
+        "conciliacion/detalle": lambda: finanzas.detalle_conciliacion(c, int(q.get("id", 0))),
         "cobranza": lambda: cobranza.agenda(c, int(q.get("dias", 15))),
         "prospectos": lambda: prospectos.listar(c) | {"estados": prospectos.ESTADOS, "origenes": prospectos.ORIGENES},
         "documento": lambda: documentos.datos_documento(c, q.get("tipo"), q.get("id")),
