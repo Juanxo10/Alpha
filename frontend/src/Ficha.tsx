@@ -135,7 +135,8 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
   const l = d.lote, r = d.resumen
   const v = d.ventas.find((x) => x.estado === 'ACTIVA')
   const esSep = v?.etapa === 'SEPARADO'
-  const [tab, setTab] = useState<string>(!v || esSep ? (v ? 'pagos' : 'hist') : 'plan')
+  const pagado = !!v && r.cartera === 'PAGADO'
+  const [tab, setTab] = useState<string>(!v || esSep ? (v ? 'pagos' : 'hist') : pagado ? 'docs' : 'plan')
   const pm2 = l.precio_lista ? l.precio_lista / l.area_m2 : null
   const bloqueado = r.estado === 'BLOQUEADO'
 
@@ -238,7 +239,7 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
             {!esSep && <button className={tab === 'plan' ? 'activo' : ''} onClick={() => setTab('plan')}>Plan de pagos<span className="n">{v.plan.length}</span></button>}
             <button className={tab === 'pagos' ? 'activo' : ''} onClick={() => setTab('pagos')}>Pagos<span className="n">{v.pagos.length}</span></button>
             <button className={tab === 'docs' ? 'activo' : ''} onClick={() => setTab('docs')}>Documentos{d.adjuntos.length > 0 && <span className="n">{d.adjuntos.length}</span>}</button>
-            <button className={tab === 'cobro' ? 'activo' : ''} onClick={() => setTab('cobro')}>Cobro{(v.gestiones || []).length > 0 && <span className="n">{v.gestiones.length}</span>}</button>
+            {!pagado && <button className={tab === 'cobro' ? 'activo' : ''} onClick={() => setTab('cobro')}>Cobro{(v.gestiones || []).length > 0 && <span className="n">{v.gestiones.length}</span>}</button>}
             <button className={tab === 'hist' ? 'activo' : ''} onClick={() => setTab('hist')}>Historial</button>
           </div>
           <div className="f-sec" style={{ border: 0 }}>
