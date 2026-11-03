@@ -1,0 +1,26 @@
+# Un contenedor por empresa + Caddy (HTTPS automático con certificados gratuitos de Let's Encrypt).
+# En el servidor:  cd despliegue  &&  docker compose up -d --build
+# Para agregar una empresa: copie el bloque "merced", cambie el nombre y la carpeta, y agréguela al Caddyfile.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMINIO: ${DOMINIO}            # se define en el archivo .env (ej.: DOMINIO=tuproducto.com)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_datos:/data
+      - caddy_config:/config
+
+  merced:
+    build: { context: .., dockerfile: despliegue/Dockerfile }
+    image: geovisor:latest
+    restart: unless-stopped
+    volumes:
+      - ../clientes/merced:/cliente  # marca, cartografía, ortofoto y base contable de la empresa
+    expose: ["8000"]
+
+volumes:
+  caddy_datos:
+  caddy_config:

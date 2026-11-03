@@ -1,8 +1,10 @@
-clientes/
 **/supabase.json
-pg_compartida.json
-node_modules/
-frontend/dist/
-__pycache__/
-.pytest_cache/
 *.sqlite
+.pytest_cache/
+__pycache__/
+clientes/
+frontend/dist/
+node_modules/
+Orto_Rionegrito Agisoft.gpkg*
+pg_compartida.json
+Rionegrito.tif

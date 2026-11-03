@@ -1,0 +1,16 @@
+{
+  "minzoom": 15,
+  "maxzoom": 22,
+  "bounds": [
+    -73.6817637,
+    4.0399987,
+    -73.672386,
+    4.0459351
+  ],
+  "scheme": "xyz",
+  "ext": "webp",
+  "descripcion": "Ortofoto dron Agisoft · Rionegrito",
+  "resolucion_cm": 2.6,
+  "origen": "Orto_Rionegrito Agisoft.gpkg",
+  "generado": "2026-10-19 10:46"
+}
