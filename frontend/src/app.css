@@ -133,7 +133,6 @@ select:focus, input:focus, textarea:focus { border-color: var(--menta-osc); box-
 .chip.PAGADO { background: #EDE5FE; color: #6B36D9; }
 .chip.ESCRITURADO { background: #DCE3F5; color: #1E3A8A; }
 .chip.BLOQUEADO { background: #E9EEF2; color: #55656F; }
-.chip.REGISTRADO { background: #D5F5F0; color: #0F766E; }
 .chip.AL_DIA { background: #DCFCE7; color: #15803D; }
 .chip.MORA_30 { background: #FEF9C3; color: #A16207; }
 .chip.MORA_90 { background: #FFEDD5; color: #C2410C; }

@@ -162,8 +162,6 @@ def resumen_lotes(c):
                      proxima_valor=ef["proxima_cuota"]["pendiente"] if ef["proxima_cuota"] else None)
         elif l["bloqueado"]:
             d["estado"] = "BLOQUEADO"
-        elif l["registrado"]:
-            d["estado"] = "REGISTRADO"
         salida.append(d)
     return salida
 
@@ -377,12 +375,6 @@ def acciones(c, usuario, ruta, d):
                   (nuevo, 1 if d.get("bloqueado") else 0, d.get("nota") or "", d["id_lote"]))
         bitacora(c, usuario, "PRECIO_LOTE", d["id_lote"], {"antes": l["precio_lista"], "despues": nuevo,
                                                           "bloqueado": bool(d.get("bloqueado")), "nota": d.get("nota")})
-        return {"ok": True}
-
-    if ruta == "/api/lote/registrar":
-        reg = 1 if d.get("registrado") else 0
-        c.execute("UPDATE lotes SET registrado=? WHERE id_lote=?", (reg, d["id_lote"]))
-        bitacora(c, usuario, "LOTE_REGISTRADO", d["id_lote"], {"registrado": bool(reg)})
         return {"ok": True}
 
     if ruta == "/api/precios/masivo":

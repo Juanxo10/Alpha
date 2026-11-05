@@ -26,7 +26,7 @@ LIBRE_OPERADOR = {
     "/api/venta/separar", "/api/venta/vender", "/api/pago", "/api/comision/asignar", "/api/comisionista/guardar",
     "/api/cobranza/gestion", "/api/cobranza/enviar", "/api/prospecto/guardar", "/api/prospecto/nota",
     "/api/prospecto/estado", "/api/adjunto/subir", "/api/cotizacion", "/api/conciliacion/analizar", "/api/conciliacion/xlsx",
-    "/api/conciliacion/confirmar", "/api/venta/escriturar", "/api/respaldo", "/api/lote/registrar",
+    "/api/conciliacion/confirmar", "/api/venta/escriturar", "/api/respaldo",
 }
 REQUIERE_APROBACION = {
     "/api/lote/precio", "/api/precios/masivo", "/api/venta/editar", "/api/venta/desistir", "/api/venta/reestructurar",

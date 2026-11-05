@@ -42,7 +42,7 @@ export default function Cartera({ lotes, abrir }: { lotes: Lote[]; abrir: (id: s
           <option value="">Todos los estados</option>
           <option value="DISPONIBLE">Disponible</option><option value="SEPARADO">Separado</option>
           <option value="VENDIDO">Vendido (con saldo)</option><option value="PAGADO">Pagado</option>
-          <option value="ESCRITURADO">Escriturado</option><option value="REGISTRADO">Registrado</option><option value="BLOQUEADO">Bloqueado</option>
+          <option value="ESCRITURADO">Escriturado</option><option value="BLOQUEADO">Bloqueado</option>
           <option value="NEGOCIADO">Con negocio (todos)</option>
         </select>
         <select value={ca} onChange={(e) => setCa(e.target.value)}>
