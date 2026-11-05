@@ -424,7 +424,7 @@ const CSS_HOJA = `
   .hv .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .chip.DISPONIBLE { background: #DDFBEE; color: #0E8A5B; } .chip.SEPARADO { background: #FEF2D7; color: #A86A00; }
   .chip.VENDIDO { background: #DFEAFE; color: #1D4FC4; } .chip.PAGADO { background: #EDE5FE; color: #6B36D9; }
-  .chip.ESCRITURADO { background: #DCE3F5; color: #1E3A8A; } .chip.BLOQUEADO { background: #E9EEF2; color: #55656F; }
+  .chip.ESCRITURADO { background: #DCE3F5; color: #1E3A8A; } .chip.BLOQUEADO { background: #E9EEF2; color: #55656F; } .chip.REGISTRADO { background: #D5F5F0; color: #0F766E; }
   .chip.AL_DIA { background: #DCFCE7; color: #15803D; } .chip.MORA_30 { background: #FEF9C3; color: #A16207; }
   .chip.MORA_90 { background: #FFEDD5; color: #C2410C; } .chip.MORA_MAS_90 { background: #FEE2E2; color: #B91C1C; }
   .chip.SEPARACION_VENCIDA { background: #FFEDD5; color: #9A3412; }

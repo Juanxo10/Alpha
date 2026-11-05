@@ -4,6 +4,7 @@ import {
   History, Lock, Pencil, Printer, Receipt, Stamp, Tag, Undo2, UserRound, Handshake, X, Ban, MessageCircle, PhoneCall, CalendarRange, BadgePercent, Plus, Calculator,
 } from 'lucide-react'
 import { CARTERA, ESTADOS, fecha, fmtN1, m2, pesos, pesosCorto } from './formato'
+import { api } from './api'
 import PlanoMini from './PlanoMini'
 import { FormAnular, FormAsignarComision, FormDesistir, FormEditarComision, FormEscritura, FormInmueble, FormPago, FormPrecio, FormQuitarComision, FormReestructurar, FormSeparar, FormVenta, Recibo } from './Acciones'
 import { FormGestion, TIPOS_GESTION } from './Cobranza'
@@ -263,6 +264,7 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
               <button className="btn sec peq" onClick={() => setM({ t: 'precio' })}><Tag />Precio y bloqueo</button>
               <button className="btn sec peq" onClick={() => setM({ t: 'inmueble' })}><Pencil />Datos del inmueble</button>
               <button className="btn sec peq" disabled={bloqueado} onClick={() => setM({ t: 'cotizar' })}><Calculator />Cotizar</button>
+              {!bloqueado && <button className="btn sec peq" onClick={async () => { await api('/api/lote/registrar', { id_lote: l.id_lote, registrado: r.estado !== 'REGISTRADO' }); await recargar(r.estado === 'REGISTRADO' ? 'Lote sin registrar' : 'Lote registrado') }}><BadgeCheck />{r.estado === 'REGISTRADO' ? 'Quitar registrado' : 'Registrado'}</button>}
             </div>
           </div>
           <div className="subtabs">
