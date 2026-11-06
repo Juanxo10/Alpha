@@ -29,18 +29,18 @@ from .base import ErrorNegocio, ahora, bitacora, config, hoy, num
 
 
 TIPOS = {
-    "PROMESA": {"nombre": "Promesa de compraventa", "prefijo": "PCV", "etapas": ("VENDIDO", "ESCRITURADO"),
+    "PROMESA": {"nombre": "Promesa de compraventa", "prefijo": "PCV", "etapas": ("VENDIDO", "ESCRITURADO", "REGISTRADO"),
                 "adjunto": "Promesa de compraventa", "icono": "file-signature",
                 "ayuda": "Formaliza la venta: objeto, precio, plan de pagos, escritura y cláusula penal."},
     "SEPARACION": {"nombre": "Acuerdo de separación", "prefijo": "SEP", "etapas": ("SEPARADO",),
                    "adjunto": "Acuerdo de pago", "icono": "bookmark",
                    "ayuda": "Reserva el lote con el abono de separación y su fecha límite."},
-    "OTROSI": {"nombre": "Otrosí de forma de pago", "prefijo": "OTS", "etapas": ("VENDIDO", "ESCRITURADO"),
+    "OTROSI": {"nombre": "Otrosí de forma de pago", "prefijo": "OTS", "etapas": ("VENDIDO", "ESCRITURADO", "REGISTRADO"),
                "adjunto": "Acuerdo de pago", "icono": "file-pen-line",
                "ayuda": "Modifica la forma de pago del saldo (después de un abono a capital o una reestructuración).",
                "campos": [{"k": "motivo_otrosi", "et": "Consideraciones (por qué se modifica el plan)", "tipo": "texto", "req": True,
                            "def": "Las partes acordaron modificar la forma de pago del saldo pendiente del negocio."}]},
-    "ACTA_ENTREGA": {"nombre": "Acta de entrega del lote", "prefijo": "ACT", "etapas": ("VENDIDO", "ESCRITURADO"),
+    "ACTA_ENTREGA": {"nombre": "Acta de entrega del lote", "prefijo": "ACT", "etapas": ("VENDIDO", "ESCRITURADO", "REGISTRADO"),
                      "adjunto": "Otro", "icono": "key-round",
                      "ayuda": "Deja constancia de la entrega material del lote en terreno.",
                      "campos": [{"k": "fecha_entrega", "et": "Fecha de la entrega", "tipo": "fecha", "req": True},
@@ -59,18 +59,18 @@ TIPOS = {
                           {"k": "cesionario_documento", "et": "Número de documento", "tipo": "texto", "req": True},
                           {"k": "cesionario_direccion", "et": "Dirección", "tipo": "texto"},
                           {"k": "cesionario_telefono", "et": "Teléfono", "tipo": "texto"}]},
-    "DACION": {"nombre": "Dación en pago", "prefijo": "DAC", "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO"),
+    "DACION": {"nombre": "Dación en pago", "prefijo": "DAC", "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO", "REGISTRADO"),
                "adjunto": "Otro", "icono": "car", "modalidad": "DACION",
                "ayuda": "El comprador entrega un bien (vehículo, inmueble, otro) como parte del pago del lote.",
                "campos": [{"k": "bien_id", "et": "Bien recibido", "tipo": "bien", "req": True}]},
-    "PERMUTA": {"nombre": "Contrato de permuta", "prefijo": "PER", "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO"),
+    "PERMUTA": {"nombre": "Contrato de permuta", "prefijo": "PER", "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO", "REGISTRADO"),
                 "adjunto": "Otro", "icono": "repeat", "modalidad": "PERMUTA",
                 "ayuda": "Se cambia el lote por un bien del comprador; si hay diferencia de valor, se paga en dinero.",
                 "campos": [{"k": "bien_id", "et": "Bien recibido en permuta", "tipo": "bien", "req": True}]},
     "AUTORIZACION_DATOS": {"nombre": "Autorización de tratamiento de datos personales", "prefijo": "ADP",
-                           "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO"), "adjunto": "Otro", "icono": "shield-check",
+                           "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO", "REGISTRADO"), "adjunto": "Otro", "icono": "shield-check",
                            "ayuda": "El comprador autoriza el tratamiento de sus datos personales (Ley 1581 de 2012). Se firma una vez por comprador."},
-    "PROMESA_BLOQUE": {"nombre": "Promesa de compraventa en bloque", "prefijo": "PCB", "etapas": ("VENDIDO", "ESCRITURADO"),
+    "PROMESA_BLOQUE": {"nombre": "Promesa de compraventa en bloque", "prefijo": "PCB", "etapas": ("VENDIDO", "ESCRITURADO", "REGISTRADO"),
                        "adjunto": "Promesa de compraventa", "icono": "layers", "bloque": True,
                        "ayuda": "Una sola promesa para todos los lotes del negocio en bloque, con el cuadro de lotes y el plan único.",
                        "campos": [{"k": "bloque_id", "et": "Negocio en bloque", "tipo": "bloque", "req": True}]},
@@ -695,7 +695,7 @@ def cargar_propios(c):
     for k in [k for k, t in TIPOS.items() if t.get("propio")]:
         del TIPOS[k]
     for r in c.execute("SELECT * FROM contrato_tipos ORDER BY tipo"):
-        TIPOS[r["tipo"]] = {"nombre": r["nombre"], "prefijo": r["prefijo"], "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO"),
+        TIPOS[r["tipo"]] = {"nombre": r["nombre"], "prefijo": r["prefijo"], "etapas": ("SEPARADO", "VENDIDO", "ESCRITURADO", "REGISTRADO"),
                             "adjunto": "Otro", "icono": "file-text", "propio": True,
                             "ayuda": r["ayuda"] or "Contrato propio de la empresa."}
 
@@ -830,7 +830,7 @@ def listar(c, venta_id=None):
         return {"contratos": filas, "tipos": tipos_publicos(), "autorizacion_datos": (None if not existe else not sin)}
     pend = [dict(r) for r in c.execute(
         "SELECT v.id venta_id, v.id_lote, v.etapa, v.fecha_venta, cl.nombre cliente FROM ventas v JOIN clientes cl ON cl.id=v.cliente_id "
-        "WHERE v.estado='ACTIVA' AND v.etapa IN ('VENDIDO','ESCRITURADO') AND NOT EXISTS (SELECT 1 FROM contratos k WHERE k.venta_id=v.id "
+        "WHERE v.estado='ACTIVA' AND v.etapa IN ('VENDIDO','ESCRITURADO','REGISTRADO') AND NOT EXISTS (SELECT 1 FROM contratos k WHERE k.venta_id=v.id "
         "AND k.tipo='PROMESA' AND k.estado='FIRMADO') AND NOT EXISTS (SELECT 1 FROM bloque_lotes bl JOIN bloque_lotes bl2 ON bl2.bloque_id=bl.bloque_id "
         "JOIN contratos k2 ON k2.venta_id=bl2.venta_id AND k2.tipo='PROMESA_BLOQUE' AND k2.estado='FIRMADO' WHERE bl.venta_id=v.id) ORDER BY v.fecha_venta")]
     por_cliente = {}

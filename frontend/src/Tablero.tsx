@@ -126,7 +126,7 @@ export default function Tablero({ config }: { config: Record<string, unknown> })
   if (error) return <div className="pagina"><p role="alert">{error}</p></div>
   if (!r) return <div className="pagina"><p>Cargando…</p></div>
 
-  const c = r.conteo, vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0), neg = r.valor_vendido
+  const c = r.conteo, vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0) + (c.REGISTRADO || 0), neg = r.valor_vendido
   const pctRec = neg + r.valor_separado ? (100 * r.recaudado) / (neg + r.valor_separado) : 0
   const coms = (r.comisiones?.comisionistas || []).filter((x) => x.por_pagar > 0.5).sort((a, b) => b.por_pagar - a.por_pagar).slice(0, 8)
   const t = r.comisiones?.totales

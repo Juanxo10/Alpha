@@ -31,8 +31,8 @@ export const ESTADOS: Record<string, { nom: string; c: string }> = {
   VENDIDO: { nom: 'Vendido con saldo', c: '#3B82F6' },
   PAGADO: { nom: 'Pagado', c: '#8B5CF6' },
   ESCRITURADO: { nom: 'Escriturado', c: '#1E3A8A' },
-  BLOQUEADO: { nom: 'Bloqueado', c: '#94A3B8' },
   REGISTRADO: { nom: 'Registrado', c: '#14B8A6' },
+  BLOQUEADO: { nom: 'Bloqueado', c: '#94A3B8' },
 }
 
 export const CARTERA: Record<string, { nom: string; c: string }> = {

@@ -218,7 +218,7 @@ export function DetalleBloque({ id, cerrar, abrir, config, listo }: { id: number
               <td><button type="button" className="link" onClick={() => { cerrar(); abrir(l.id_lote) }}>{l.id_lote}</button></td>
               <td className="d">{pesos(l.valor)}</td><td className="d">{pesos(l.pagado)}</td><td className="d">{pesos(l.saldo)}</td>
               <td><div className="nfl-barra"><i style={{ width: `${Math.min(100, l.pct_pagado || 0)}%` }} /></div></td>
-              <td>{l.estado !== 'ACTIVA' ? 'Desistido' : l.etapa === 'ESCRITURADO' ? 'Escriturado' : l.saldo <= 0.5 ? <b style={{ color: 'var(--menta-osc)' }}>Pagado · listo para escriturar</b>
+              <td>{l.estado !== 'ACTIVA' ? 'Desistido' : l.etapa === 'REGISTRADO' ? 'Registrado' : l.etapa === 'ESCRITURADO' ? 'Escriturado' : l.saldo <= 0.5 ? <b style={{ color: 'var(--menta-osc)' }}>Pagado · listo para escriturar</b>
                 : l.vencido > 0.5 ? <span style={{ color: 'var(--peligro)' }}>Mora {l.dias_mora} días</span> : 'Al día'}</td></tr>))}</tbody></table>
         <div className="bloque-tit" style={{ margin: '14px 0 6px' }}>Plan de pagos único</div>
         <div className="nfl-plan"><table className="mini-tabla"><thead><tr><th>Fecha</th><th className="d">Valor</th><th className="d">Pagado</th><th className="d">Pendiente</th><th>Estado</th><th>Lotes</th></tr></thead>
@@ -340,7 +340,7 @@ async function imprimirEstadoBloque(id: number, c: Datos) {
         <div><small>Saldo</small><b>${pesos(r.saldo)}</b></div><div class="${r.vencido > 0.5 ? 'malo' : ''}"><small>Vencido</small><b>${pesos(r.vencido)}</b></div></div>
       <h3>1. Lotes</h3><table><thead><tr><th>#</th><th>Lote</th><th class="d">Valor</th><th class="d">Pagado</th><th class="d">Saldo</th><th>Estado</th></tr></thead><tbody>
         ${b.lotes.map((l: Datos) => `<tr><td>${l.orden}</td><td>${l.id_lote}</td><td class="d">${pesos(l.valor)}</td><td class="d">${pesos(l.pagado)}</td><td class="d">${pesos(l.saldo)}</td>
-          <td>${l.estado !== 'ACTIVA' ? 'Desistido' : l.etapa === 'ESCRITURADO' ? 'Escriturado' : l.saldo <= 0.5 ? 'Pagado' : 'Vigente'}</td></tr>`).join('')}</tbody></table>
+          <td>${l.estado !== 'ACTIVA' ? 'Desistido' : l.etapa === 'REGISTRADO' ? 'Registrado' : l.etapa === 'ESCRITURADO' ? 'Escriturado' : l.saldo <= 0.5 ? 'Pagado' : 'Vigente'}</td></tr>`).join('')}</tbody></table>
       <h3>2. Plan de pagos</h3><table><thead><tr><th>Fecha</th><th class="d">Valor</th><th class="d">Pagado</th><th class="d">Pendiente</th><th>Estado</th></tr></thead><tbody>
         ${b.plan.map((x: Datos) => `<tr class="${x.pendiente > 0.5 && x.fecha < hoy ? 'venc' : x.pendiente <= 0.5 ? 'pag' : ''}"><td>${fecha(x.fecha)}</td><td class="d">${pesos(x.valor)}</td>
           <td class="d">${pesos(x.pagado)}</td><td class="d">${pesos(x.pendiente)}</td><td>${x.pendiente <= 0.5 ? 'Pagada' : x.fecha < hoy ? 'Vencida' : 'Pendiente'}</td></tr>`).join('')}</tbody></table>

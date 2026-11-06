@@ -110,7 +110,7 @@ export function Usuarios() {
 // ------------------------------------------------------------------ auditoría
 const ACCIONES_TXT: Record<string, string> = {
   PAGO: 'Pago registrado', ANULAR_PAGO: 'Recibo anulado', VENTA: 'Venta', SEPARACION: 'Separación', EDITAR_VENTA: 'Negocio modificado',
-  DESISTIMIENTO: 'Desistimiento', ESCRITURA: 'Escrituración', REESTRUCTURACION: 'Plan reestructurado', PRECIO_LOTE: 'Precio de lote',
+  DESISTIMIENTO: 'Desistimiento', ESCRITURA: 'Escrituración', REGISTRO: 'Escritura registrada (ORIP)', REGISTRO_EDITADO: 'Registro corregido', REGISTRO_ANULADO: 'Registro anulado', REESTRUCTURACION: 'Plan reestructurado', PRECIO_LOTE: 'Precio de lote',
   PRECIO_MASIVO: 'Precios masivos', CLIENTE_NUEVO: 'Comprador creado', GASTO: 'Gasto', GASTO_ANULADO: 'Gasto anulado',
   PRESUPUESTO: 'Presupuesto', CONCILIACION: 'Conciliación', GESTION_COBRO: 'Gestión de cobro', RECORDATORIO: 'Recordatorio enviado',
   ADJUNTO: 'Documento subido', ADJUNTO_ELIMINADO: 'Documento eliminado', COTIZACION: 'Cotización', PROSPECTO_NUEVO: 'Prospecto',

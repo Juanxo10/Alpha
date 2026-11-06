@@ -223,7 +223,7 @@ export function imprimirEstadoCuenta(d: any, c: any) {
 
 export function imprimirInforme(r: any, lotes: any[], c: any) {
   const k = r.conteo
-  const vendidos = (k.VENDIDO || 0) + (k.PAGADO || 0) + (k.ESCRITURADO || 0)
+  const vendidos = (k.VENDIDO || 0) + (k.PAGADO || 0) + (k.ESCRITURADO || 0) + (k.REGISTRADO || 0)
   const mora = lotes.filter((l) => ['MORA_30', 'MORA_90', 'MORA_MAS_90'].includes(l.cartera)).sort((a, b) => b.dias_mora - a.dias_mora)
   imprimir('Informe de ventas y cartera', `${cabecera(c, 'INFORME DE VENTAS Y CARTERA', '', `Corte: ${fechaLarga(r.fecha)}`)}
     <div class="resumen"><div><small>Lotes vendidos</small><b>${vendidos} de ${r.total_lotes}</b></div><div><small>Separados</small><b>${k.SEPARADO || 0}</b></div>

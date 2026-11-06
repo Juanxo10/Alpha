@@ -341,7 +341,7 @@ def detalle(c, bid, pre=None, con_pagos=True):
                         "saldo": sum(x["saldo"] for x in activos), "vencido": sum(x["vencido"] for x in activos),
                         "dias_mora": max([x["dias_mora"] or 0 for x in activos] or [0]),
                         "lotes_activos": len(activos), "lotes_pagados": sum(1 for x in activos if x["saldo"] <= 0.5),
-                        "escriturados": sum(1 for x in activos if x["etapa"] == "ESCRITURADO"),
+                        "escriturados": sum(1 for x in activos if x["etapa"] in ("ESCRITURADO", "REGISTRADO")),
                         "proxima": prox}}
 
 

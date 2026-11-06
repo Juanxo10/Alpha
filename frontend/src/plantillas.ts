@@ -380,6 +380,14 @@ function hojaDeVidaHTML(d) {
       ${v.numero_escritura ? `<tr><th>Escritura</th><td>N° ${esc(v.numero_escritura)} del ${fecha(v.fecha_escritura)}</td><th>Notaría</th><td>${esc(v.notaria || "")}</td></tr>` : ""}
     </table>
 
+    ${v && (v.numero_escritura || v.registro) ? `<h2><span>4b</span>Escritura y registro</h2>
+    <table class="ficha ancha cols">
+      <tr><th>Escritura</th><td>${v.numero_escritura ? `N° ${esc(v.numero_escritura)} del ${fecha(v.fecha_escritura)}` : "—"}</td><th>Notaría</th><td>${esc(v.notaria || "—")}</td></tr>
+      ${v.registro ? `<tr><th>Matrícula inmobiliaria</th><td><b>${esc(v.registro.matricula_inmobiliaria)}</b></td><th>Oficina de registro (ORIP)</th><td>${esc(v.registro.orip)}</td></tr>
+      <tr><th>Fecha de registro</th><td>${fecha(v.registro.fecha_registro)}</td><th>Anotación</th><td>${esc(v.registro.numero_anotacion || "—")}</td></tr>
+      <tr><th>Propietario inscrito</th><td>${esc(v.registro.propietario_inscrito || "—")}</td><th>N° predial</th><td>${esc(v.registro.numero_predial || "—")}</td></tr>` : `<tr><th>Registro</th><td colspan="3">Pendiente de inscripción en la ORIP</td></tr>`}
+    </table>` : ""}
+
     <h2><span>5</span>Estado de cuenta al ${fecha(corte)}</h2>
     <div class="kpis">
       <div><small>Total pagado</small><b>${pesos(v.pagado)}</b></div>

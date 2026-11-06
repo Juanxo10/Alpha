@@ -6,7 +6,7 @@ import math
 import re
 
 from .base import ErrorNegocio, ahora, bitacora, config, fecha, hoy, num, siguiente_consecutivo, sumar_meses
-from . import comisiones
+from . import comisiones, registro
 
 
 # ------------------------------------------------------- plan de pagos y mora
@@ -162,8 +162,6 @@ def resumen_lotes(c):
                      proxima_valor=ef["proxima_cuota"]["pendiente"] if ef["proxima_cuota"] else None)
         elif l["bloqueado"]:
             d["estado"] = "BLOQUEADO"
-        elif l["registrado"]:
-            d["estado"] = "REGISTRADO"
         salida.append(d)
     return salida
 
@@ -173,7 +171,7 @@ def resumen_general(c):
     est = {}
     for l in lotes:
         est[l["estado"]] = est.get(l["estado"], 0) + 1
-    vendidos = [l for l in lotes if l["estado"] in ("VENDIDO", "PAGADO", "ESCRITURADO")]
+    vendidos = [l for l in lotes if l["estado"] in ("VENDIDO", "PAGADO", "ESCRITURADO", "REGISTRADO")]
     separados = [l for l in lotes if l["estado"] == "SEPARADO"]
     mora = [l for l in lotes if l["cartera"] in ("MORA_30", "MORA_90", "MORA_MAS_90")]
     disponibles = [l for l in lotes if l["estado"] == "DISPONIBLE"]
@@ -184,7 +182,7 @@ def resumen_general(c):
         m["lotes"] += 1
         m["disponibles"] += l["estado"] == "DISPONIBLE"
         m["separados"] += l["estado"] == "SEPARADO"
-        m["vendidos"] += l["estado"] in ("VENDIDO", "PAGADO", "ESCRITURADO")
+        m["vendidos"] += l["estado"] in ("VENDIDO", "PAGADO", "ESCRITURADO", "REGISTRADO")
         m["valor_venta"] += l["valor_venta"]
         m["pagado"] += l["pagado"]
         m["saldo"] += l["saldo"]
@@ -251,6 +249,8 @@ def detalle_lote(c, id_lote):
     resumen = next(x for x in resumen_lotes(c) if x["id_lote"] == id_lote)
     bit = [dict(b) for b in c.execute("SELECT id, fecha, usuario, accion, id_lote, detalle FROM bitacora "
                                       "WHERE id_lote=? ORDER BY id DESC LIMIT 80", (id_lote,))]
+    for v in ventas:
+        v["registro"] = registro.vigente(c, v["id"])
     adj = [dict(a) for a in c.execute("SELECT * FROM adjuntos WHERE id_lote=? AND eliminado=0 ORDER BY id DESC", (id_lote,))]
     publica = {k: v for k, v in cfg.items() if k not in ("smtp_clave", "telegram_token", "clave_interna")}
     return {"lote": dict(l), "resumen": resumen, "ventas": ventas, "bitacora": bit, "adjuntos": adj, "config": publica}
@@ -380,10 +380,7 @@ def acciones(c, usuario, ruta, d):
         return {"ok": True}
 
     if ruta == "/api/lote/registrar":
-        reg = 1 if d.get("registrado") else 0
-        c.execute("UPDATE lotes SET registrado=? WHERE id_lote=?", (reg, d["id_lote"]))
-        bitacora(c, usuario, "LOTE_REGISTRADO", d["id_lote"], {"registrado": bool(reg)})
-        return {"ok": True}
+        raise ErrorNegocio("Un lote solo se registra desde su venta escriturada: use «Registrar» en la ficha del lote escriturado.")
 
     if ruta == "/api/precios/masivo":
         modo, valor = d.get("modo"), num(d.get("valor"))

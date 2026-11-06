@@ -173,7 +173,7 @@ export default function App() {
   const espera = <Splash />
   const contenido = () => {
     switch (vista) {
-      case 'mapa': return loteo ? <Mapa datos={loteo} abrir={abrir} config={config} refrescar={refrescar} seleccionar={selMapa} /> : <Splash error={errorLoteo} />
+      case 'mapa': return loteo ? <Mapa datos={loteo} abrir={abrir} config={config} refrescar={refrescar} seleccionar={selMapa} rol={rol} /> : <Splash error={errorLoteo} />
       case 'tablero': return <Tablero config={config} />
       case 'cartera': return loteo ? <Cartera lotes={loteo.lotes} abrir={irALote} /> : espera
       case 'pagos': return <Pagos abrir={irALote} config={config} />

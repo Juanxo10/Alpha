@@ -13,13 +13,13 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from nucleo import (alertas, base, bienes, bloques, cartera, cobranza, comisiones, contratos, desistimientos, documentos, exportar,
-                    finanzas, prospectos, seguridad, tenant)
+                    finanzas, prospectos, registro, seguridad, tenant)
 from nucleo.base import ErrorNegocio, bitacora, config, num
 
 AQUI = os.path.dirname(sys.executable if getattr(sys, "frozen", False) else os.path.abspath(__file__))
 MODULOS = [cartera.acciones, comisiones.acciones_comisiones, finanzas.acciones, cobranza.acciones, documentos.acciones,
-           prospectos.acciones, contratos.acciones, bienes.acciones, bloques.acciones, desistimientos.acciones]
-LECTURAS = [contratos.get, bienes.get, bloques.get, desistimientos.get]
+           prospectos.acciones, contratos.acciones, bienes.acciones, bloques.acciones, desistimientos.acciones, registro.acciones]
+LECTURAS = [contratos.get, bienes.get, bloques.get, desistimientos.get, registro.get]
 
 app = FastAPI(title="Geovisor")
 
@@ -28,7 +28,7 @@ def iniciar(carpeta_cliente):
     t = base.usar_cliente(carpeta_cliente)
     base.iniciar_base()
     with base.conectar() as c:
-        for m in (contratos, bienes, bloques, desistimientos):      # tablas propias y reglas de seguridad de cada módulo
+        for m in (contratos, bienes, bloques, desistimientos, registro):      # tablas propias y reglas de seguridad de cada módulo
             m.iniciar(c)
     alertas.EJECUTOR = ejecutar
     alertas.arrancar()

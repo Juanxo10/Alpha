@@ -196,7 +196,7 @@ function Tarjeta({ d, p, geo, cerrar, abrirFicha }: { d: Detalle; p: Props; geo:
   )
 }
 
-export default function Mapa({ datos, abrir, config, refrescar, seleccionar }: { datos: DatosLoteo; abrir?: string | null; config: Record<string, unknown>; refrescar: () => Promise<void>; seleccionar?: boolean }) {
+export default function Mapa({ datos, abrir, config, refrescar, seleccionar, rol }: { rol?: string; datos: DatosLoteo; abrir?: string | null; config: Record<string, unknown>; refrescar: () => Promise<void>; seleccionar?: boolean }) {
   const { geo, orto, lotes, resumen: r } = datos
   const contenedor = useRef<HTMLDivElement>(null)
   const mapa = useRef<maplibregl.Map | null>(null)
@@ -437,7 +437,7 @@ export default function Mapa({ datos, abrir, config, refrescar, seleccionar }: {
     cuenta[k] = (cuenta[k] || 0) + 1
     valor[k] = (valor[k] || 0) + (tema === 'cartera' && EN_MORA.includes(k) ? l.vencido : l.saldo || 0)
   })
-  const c = r.conteo, vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0)
+  const c = r.conteo, vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0) + (c.REGISTRADO || 0)
   const neg = r.valor_vendido + r.valor_separado, pctRec = neg ? (100 * r.recaudado) / neg : 0
   const gestion = lotes.filter((l) => l.cartera === 'SEPARACION_VENCIDA' || (EN_MORA.includes(l.cartera ?? '') && l.dias_mora > 30))
     .sort((a, b) => (b.dias_mora || 0) - (a.dias_mora || 0))
@@ -531,7 +531,7 @@ export default function Mapa({ datos, abrir, config, refrescar, seleccionar }: {
       </div>
 
       <aside className={`ficha ${fichaAbierta ? 'abierta' : ''}`}>
-        <div className="ficha-cont">{fichaAbierta && detalle && sel && <Ficha d={detalle} props={props[sel]} geo={geo} cerrar={cerrarFicha} config={config} lotes={lotes} recargar={recargarFicha} inicial={accion} />}</div>
+        <div className="ficha-cont">{fichaAbierta && detalle && sel && <Ficha d={detalle} props={props[sel]} geo={geo} cerrar={cerrarFicha} config={config} lotes={lotes} recargar={recargarFicha} inicial={accion} rol={rol} />}</div>
       </aside>
 
       {formBloque && <FormBloque ids={formBloque} porId={porId} config={config} abrir={(id) => { setFormBloque(null); abrirFicha(id) }} listo={refrescar}

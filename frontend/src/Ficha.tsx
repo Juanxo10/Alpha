@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import {
   AlertTriangle, BadgeCheck, Bookmark, CalendarCheck, CalendarX, Clock, FileSignature, FileText, HandCoins,
-  History, Lock, Pencil, Printer, Receipt, Stamp, Tag, Undo2, UserRound, Handshake, X, Ban, MessageCircle, PhoneCall, CalendarRange, BadgePercent, Plus, Calculator,
+  History, Lock, Pencil, Printer, Receipt, Stamp, Tag, Undo2, UserRound, Handshake, X, Ban, MessageCircle, PhoneCall, CalendarRange, BadgePercent, Plus, Calculator, BookMarked,
 } from 'lucide-react'
 import { CARTERA, ESTADOS, fecha, fmtN1, m2, pesos, pesosCorto } from './formato'
-import { api } from './api'
 import PlanoMini from './PlanoMini'
 import { FormAnular, FormAsignarComision, FormDesistir, FormEditarComision, FormEscritura, FormInmueble, FormPago, FormPrecio, FormQuitarComision, FormReestructurar, FormSeparar, FormVenta, Recibo } from './Acciones'
 import { FormGestion, TIPOS_GESTION } from './Cobranza'
@@ -13,6 +12,7 @@ import { imprimirEstadoCuenta, imprimirRecibo } from './imprimir'
 import { numeroWhatsApp } from './ui'
 import { DocsFicha, FormCotizacion } from './Documentos'
 import { BienesFicha } from './Bienes'
+import { BloqueRegistro, FormAnularRegistro, FormRegistro } from './Registro'
 import { AvisoBloque, DetalleBloque } from './Bloques'
 import type { Detalle, Geo, Props } from './tipos'
 
@@ -22,7 +22,7 @@ export const ChipCartera = ({ k }: { k: string | null }) => (k && !['SEPARADO', 
 
 const ACCIONES: Record<string, string> = {
   PAGO: 'Pago registrado', SEPARACION: 'Lote separado', VENTA: 'Venta registrada', EDITAR_VENTA: 'Negocio modificado',
-  ESCRITURA: 'Escrituración', DESISTIMIENTO: 'Desistimiento', ANULAR_PAGO: 'Pago anulado',
+  ESCRITURA: 'Escrituración', REGISTRO: 'Escritura registrada (ORIP)', REGISTRO_EDITADO: 'Registro corregido', REGISTRO_ANULADO: 'Registro anulado', DESISTIMIENTO: 'Desistimiento', ANULAR_PAGO: 'Pago anulado',
   PRECIO_LOTE: 'Precio / bloqueo modificado', CLIENTE_NUEVO: 'Comprador creado',
   CONTRATO_GENERADO: 'Contrato generado', CONTRATO_FIRMADO: 'Firma de contrato', CONTRATO_ANULADO: 'Contrato anulado',
   BIEN_RECIBIDO: 'Bien recibido como pago', BLOQUE_VENTA: 'Venta en bloque', BLOQUE_PAGO: 'Pago de negocio en bloque',
@@ -127,7 +127,8 @@ function Historial({ d }: { d: Detalle }) {
 
 type Modal = null | { t: string; [k: string]: any }
 
-export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recargar, inicial }: {
+export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recargar, inicial, rol }: {
+  rol?: string
   d: Detalle; props: Props; geo: Geo; cerrar: () => void; config: any; lotes: any[]; recargar: (msg?: string) => Promise<void>; inicial?: string | null
 }) {
   const [m, setM] = useState<Modal>(inicial ? { t: inicial } : null)
@@ -151,7 +152,7 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
           ? <>La separación <b>venció el {fecha(vence)}</b>. Formalice la venta o libere el lote.</>
           : <>Separación vigente hasta el <b>{fecha(vence)}</b>.</>) : 'Separación sin fecha límite.'}</div></div>
     } else if (r.cartera === 'PAGADO') {
-      alerta = <div className="alerta-caja ok"><BadgeCheck /><div><b>Negocio pagado en su totalidad.</b>{v.etapa === 'ESCRITURADO' ? ` Escriturado el ${fecha(v.fecha_escritura)}.` : ' Pendiente de escriturar.'}</div></div>
+      alerta = <div className="alerta-caja ok"><BadgeCheck /><div><b>Negocio pagado en su totalidad.</b>{v.etapa === 'REGISTRADO' ? ` Escriturado el ${fecha(v.fecha_escritura)} y registrado.` : v.etapa === 'ESCRITURADO' ? ` Escriturado el ${fecha(v.fecha_escritura)}.` : ' Pendiente de escriturar.'}</div></div>
     } else if (v.dias_mora > 0) {
       const venc = v.plan.filter((c: any) => c.estado.startsWith('VENCIDA'))
       alerta = <div className="alerta-caja mora"><AlertTriangle /><div><b>{v.dias_mora} días de mora</b> · {venc.length} cuota{venc.length > 1 ? 's' : ''} vencida{venc.length > 1 ? 's' : ''} por <b>{pesos(v.vencido)}</b>. La más antigua venció el {fecha(venc[0].fecha)}.</div></div>
@@ -201,11 +202,13 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
               <button className="btn sec peq" onClick={() => imprimirEstadoCuenta(d, config)}><FileText />Estado de cuenta</button>
               <button className="btn sec peq" onClick={() => setM({ t: 'editar' })}><Pencil />Editar negocio</button>
               {v.etapa === 'VENDIDO' && <button className="btn sec peq" onClick={() => setM({ t: 'escritura' })}><Stamp />Escriturar</button>}
+              {v.etapa === 'ESCRITURADO' && <button className="btn sec peq" onClick={() => setM({ t: 'registro' })}><BookMarked />Registrar</button>}
               {!esSep && v.saldo > 0.5 && <button className="btn sec peq" onClick={() => setM({ t: 'reest' })}><CalendarRange />Reestructurar plan</button>}
               <button className="btn peligro peq" onClick={() => setM({ t: 'desistir' })}><Undo2 />{esSep ? 'Liberar lote' : 'Desistimiento'}</button>
             </div>
           </div>
           <BienesFicha v={v} config={config} recargar={recargar} />
+          {v.etapa === 'REGISTRADO' && <BloqueRegistro d={d} v={v} dueno={rol === 'DUENO'} editar={() => setM({ t: 'registro-editar' })} anular={() => setM({ t: 'registro-anular' })} />}
           <div className="f-sec"><h4><UserRound />Comprador</h4>
             <dl className="dl"><dt>Nombre</dt><dd>{v.nombre}</dd>
               <dt>Documento</dt><dd>{v.tipo_doc} {v.documento || '—'}</dd>
@@ -264,7 +267,6 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
               <button className="btn sec peq" onClick={() => setM({ t: 'precio' })}><Tag />Precio y bloqueo</button>
               <button className="btn sec peq" onClick={() => setM({ t: 'inmueble' })}><Pencil />Datos del inmueble</button>
               <button className="btn sec peq" disabled={bloqueado} onClick={() => setM({ t: 'cotizar' })}><Calculator />Cotizar</button>
-              {!bloqueado && <button className="btn sec peq" onClick={async () => { await api('/api/lote/registrar', { id_lote: l.id_lote, registrado: r.estado !== 'REGISTRADO' }); await recargar(r.estado === 'REGISTRADO' ? 'Lote sin registrar' : 'Lote registrado') }}><BadgeCheck />{r.estado === 'REGISTRADO' ? 'Quitar registrado' : 'Registrado'}</button>}
             </div>
           </div>
           <div className="subtabs">
@@ -297,6 +299,9 @@ function Modales({ m, d, v, cierra, config, recargar }: { m: NonNullable<Modal>;
       {m.t === 'anular' && <FormAnular pagoId={m.x.id} info={`Recibo N° ${m.x.recibo} · ${pesos(m.x.valor)}`} cerrar={cierra} listo={(msg) => recargar(msg)} />}
       {m.t === 'desistir' && <FormDesistir {...base} v={v} />}
       {m.t === 'escritura' && <FormEscritura {...base} v={v} />}
+      {m.t === 'registro' && <FormRegistro {...base} v={v} />}
+      {m.t === 'registro-editar' && <FormRegistro {...base} v={v} editar />}
+      {m.t === 'registro-anular' && <FormAnularRegistro {...base} v={v} />}
       {m.t === 'precio' && <FormPrecio {...base} />}
       {m.t === 'inmueble' && <FormInmueble {...base} />}
       {m.t === 'cotizar' && <FormCotizacion lote={d.lote} cerrar={cierra} />}
