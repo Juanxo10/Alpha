@@ -112,3 +112,17 @@ orden (campo `origen_num` en `LOTEO_MERCED.gpkg`). Si se corrige la cartografía
 `comisiones`, `seguridad` (usuarios, aprobaciones, integridad), `alertas` (Telegram, correo, tareas programadas),
 `finanzas`, `cobranza`, `documentos`, `prospectos` y `exportar`. La interfaz está en `geovisor\` (`index.html`, `js\`,
 `css\`). Para pruebas sin tocar la base real: `servir.py 8160 --db copia_de_prueba.sqlite`.
+
+## Registro de la escritura (estado «Registrado»)
+
+Orden de estados: Disponible → Separado → Vendido con saldo → Pagado → Escriturado → **Registrado**.
+«Registrado» = la escritura quedó inscrita en la ORIP y el lote tiene su matrícula inmobiliaria.
+
+- Datos: `nucleo/registro.py` (tabla `registros`, se crea sola al iniciar). La etapa de la venta pasa a `REGISTRADO`.
+- Pantalla: `geovisor/js/registro.js` (botón «Registrar» en la ficha cuando está Escriturado, bloque «Registro»,
+  «Editar registro», «Anular registro» solo para el dueño, y apartado «Escritura y registro» en la ficha integral PDF).
+- Rutas: `/api/registro/registrar`, `/editar` y `/anular` (el operador que anula queda pendiente de aprobación).
+- Núcleo tocado (cambios mínimos): `cartera.py` (suma REGISTRADO a vendidos, añade el registro al detalle del lote),
+  `seguridad.py` (permisos y texto de la solicitud), `base.py` (crea la tabla), `servir.py` (módulo), `app.js` (ESTADOS,
+  sumas de vendidos), `informe.js`/`app.css` (chip), `index.html` (script y filtro).
+- Prueba: `PRUEBA_INTEGRAL_GEOVISOR/verificacion_registro.py` (usa una base temporal nueva).

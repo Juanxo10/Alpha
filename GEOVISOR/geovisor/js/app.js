@@ -12,6 +12,7 @@ const ESTADOS = {
   VENDIDO: { nom: "Vendido con saldo", c: "#3B82F6" },
   PAGADO: { nom: "Pagado", c: "#8B5CF6" },
   ESCRITURADO: { nom: "Escriturado", c: "#1E3A8A" },
+  REGISTRADO: { nom: "Registrado", c: "#0D9488" },
   BLOQUEADO: { nom: "Bloqueado", c: "#94A3B8" },
 };
 const CARTERA = {
@@ -508,7 +509,7 @@ function cambiarBase(b) {
 function pctRecaudo(r) { const neg = r.valor_vendido + r.valor_separado; return neg ? (100 * r.recaudado) / neg : 0; }
 function pintarKpisMini() {
   const r = E.resumen, c = r.conteo;
-  const vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0);
+  const vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0) + (c.REGISTRADO || 0);
   const pctRec = pctRecaudo(r);
   $("#kpisMini").innerHTML = `
     <div class="km ancho"><div class="et"><i data-lucide="wallet"></i>Recaudado</div>
@@ -663,7 +664,7 @@ function htmlFicha(d) {
       alerta = `<div class="alerta-caja ${r.cartera === "SEPARACION_VENCIDA" ? "mora" : "aviso"}"><i data-lucide="clock"></i><div>
         ${vence ? (r.cartera === "SEPARACION_VENCIDA" ? `La separación <b>venció el ${fecha(vence)}</b>. Formalice la venta o libere el lote.` : `Separación vigente hasta el <b>${fecha(vence)}</b>.`) : "Separación sin fecha límite."}</div></div>`;
     } else if (r.cartera === "PAGADO") {
-      alerta = `<div class="alerta-caja ok"><i data-lucide="badge-check"></i><div><b>Negocio pagado en su totalidad.</b>${v.etapa === "ESCRITURADO" ? ` Escriturado el ${fecha(v.fecha_escritura)}.` : " Pendiente de escriturar."}</div></div>`;
+      alerta = `<div class="alerta-caja ok"><i data-lucide="badge-check"></i><div><b>Negocio pagado en su totalidad.</b>${v.etapa === "REGISTRADO" ? ` Escriturado el ${fecha(v.fecha_escritura)} y registrado.` : v.etapa === "ESCRITURADO" ? ` Escriturado el ${fecha(v.fecha_escritura)}.` : " Pendiente de escriturar."}</div></div>`;
     } else if (v.dias_mora > 0) {
       const venc = v.plan.filter((c) => c.estado.startsWith("VENCIDA"));
       alerta = `<div class="alerta-caja mora"><i data-lucide="alert-triangle"></i><div><b>${v.dias_mora} días de mora</b> · ${venc.length} cuota${venc.length > 1 ? "s" : ""} vencida${venc.length > 1 ? "s" : ""} por <b>${pesos(v.vencido)}</b>. La más antigua venció el ${fecha(venc[0].fecha)}.</div></div>`;
@@ -1128,7 +1129,7 @@ function formPreciosMasivos() {
 // ================================================================== TABLERO
 function pintarTablero() {
   const r = E.resumen, c = r.conteo;
-  const vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0);
+  const vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0) + (c.REGISTRADO || 0);
   const negociado = r.valor_vendido;
   $("#tbFecha").textContent = `Corte al ${fechaLarga(r.fecha)} · ${fmtN.format(r.total_lotes)} lotes · ${fmtN1.format(r.area_total_m2 / 1e4)} ha vendibles`;
   const k = (et, va, sub, color, ic, cls = "") => `<div class="kpi ${cls}" style="--c:${color}"><div class="et"><i data-lucide="${ic}"></i>${et}</div><div class="va">${va}</div><div class="sub">${sub}</div></div>`;
@@ -1414,7 +1415,7 @@ function imprimirEstadoCuenta(d) {
 
 function imprimirInforme() {
   const r = E.resumen, c = r.conteo;
-  const vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0);
+  const vendidos = (c.VENDIDO || 0) + (c.PAGADO || 0) + (c.ESCRITURADO || 0) + (c.REGISTRADO || 0);
   const mora = E.lotes.filter((l) => EN_MORA.includes(l.cartera)).sort((a, b) => b.dias_mora - a.dias_mora);
   imprimir("Informe de ventas y cartera", `${cabecera("INFORME DE VENTAS Y CARTERA", "", `Corte: ${fechaLarga(r.fecha)}`)}
     <div class="resumen"><div><small>Lotes vendidos</small><b>${vendidos} de ${r.total_lotes}</b></div><div><small>Separados</small><b>${c.SEPARADO || 0}</b></div>
