@@ -132,7 +132,6 @@ select:focus, input:focus, textarea:focus { border-color: var(--menta-osc); box-
 .chip.VENDIDO { background: #DFEAFE; color: #1D4FC4; }
 .chip.PAGADO { background: #EDE5FE; color: #6B36D9; }
 .chip.ESCRITURADO { background: #DCE3F5; color: #1E3A8A; }
-.chip.REGISTRADO { background: #CCFBF1; color: #0F766E; }
 .chip.BLOQUEADO { background: #E9EEF2; color: #55656F; }
 .chip.AL_DIA { background: #DCFCE7; color: #15803D; }
 .chip.MORA_30 { background: #FEF9C3; color: #A16207; }

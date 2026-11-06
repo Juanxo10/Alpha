@@ -21,13 +21,12 @@ LIBRE_OPERADOR = {
     "/api/cobranza/gestion", "/api/cobranza/enviar", "/api/prospecto/guardar", "/api/prospecto/nota",
     "/api/prospecto/estado", "/api/adjunto/subir", "/api/cotizacion", "/api/conciliacion/analizar",
     "/api/conciliacion/confirmar", "/api/venta/escriturar", "/api/respaldo",
-    "/api/registro/registrar", "/api/registro/editar",
 }
 REQUIERE_APROBACION = {
     "/api/lote/precio", "/api/precios/masivo", "/api/venta/editar", "/api/venta/desistir", "/api/venta/reestructurar",
     "/api/pago/anular", "/api/comision/editar", "/api/comision/anular", "/api/comision/pagar",
     "/api/comision/pago/anular", "/api/comisionista/estado", "/api/gasto", "/api/gasto/anular", "/api/presupuesto",
-    "/api/adjunto/eliminar", "/api/config", "/api/registro/anular",
+    "/api/adjunto/eliminar", "/api/config",
 }
 SOLO_DUENO = {"/api/usuarios/guardar", "/api/usuarios/clave", "/api/usuarios/estado", "/api/solicitud/resolver",
               "/api/config/secreta", "/api/integridad/aceptar"}
@@ -238,8 +237,6 @@ def resumen_solicitud(c, ruta, d):
         return f"Desistimiento del lote {lote} ({v['cliente'] if v else ''}). Motivo: {d.get('motivo', '')}", lote
     if ruta == "/api/venta/escriturar":
         return f"Escriturar el lote {lote} de {v['cliente'] if v else ''} CON SALDO PENDIENTE", lote
-    if ruta == "/api/registro/anular":
-        return f"Anular el registro (matrícula) del lote {lote} de {v['cliente'] if v else ''}. Motivo: {d.get('motivo', '')}", lote
     if ruta == "/api/venta/reestructurar":
         modo = {"plazo": "reducir el plazo", "cuota": "reducir la cuota"}.get(d.get("modo"), f"{d.get('n_cuotas')} cuotas")
         return f"Reestructurar el plan del lote {lote} ({v['cliente'] if v else ''}): {modo}. Motivo: {d.get('motivo') or 'abono a capital'}", lote

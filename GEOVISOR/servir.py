@@ -24,7 +24,7 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlparse
 
-from nucleo import (registro, alertas, base, cartera, cobranza, comisiones, documentos, exportar, finanzas, prospectos,
+from nucleo import (alertas, base, cartera, cobranza, comisiones, documentos, exportar, finanzas, prospectos,
                     seguridad)
 from nucleo.base import ErrorNegocio, bitacora, config, hoy
 
@@ -32,7 +32,7 @@ NAVEGADORES = [r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
                r"C:\Program Files\Google\Chrome\Application\chrome.exe"]
 MODULOS = [cartera.acciones, comisiones.acciones_comisiones, finanzas.acciones, cobranza.acciones, documentos.acciones,
-           prospectos.acciones, registro.acciones]
+           prospectos.acciones]
 
 
 # ---------------------------------------------------------------- operaciones

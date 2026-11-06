@@ -265,8 +265,6 @@ def iniciar_base():
         respaldar("inicio")           # antes de migrar, por si acaso
     with conectar() as c:
         c.executescript(ESQUEMA)
-        from . import registro
-        registro.iniciar(c)
         agregar_columnas(c)
         for k, v in CONFIG_INICIAL.items():
             c.execute("INSERT OR IGNORE INTO config VALUES (?,?)", (k, v))
