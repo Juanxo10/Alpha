@@ -28,7 +28,7 @@ const GRUPOS: { ic: ComponentType; t: string; items: Item[] }[] = [
     { v: 'conciliacion', ic: GitCompare, t: 'Conciliación bancaria', s: 'Cruce con el extracto del banco' },
     { v: 'bienes', ic: Car, t: 'Bienes recibidos', s: 'Vehículos, inmuebles y permutas como pago' }] },
   { ic: ShieldCheck, t: 'Administración', items: [
-    { v: 'aprobaciones', ic: ShieldAlert, t: 'Aprobaciones', s: 'Operaciones que esperan visto bueno de un dueño' },
+    { v: 'aprobaciones', ic: ShieldAlert, t: 'Aprobaciones', s: 'Operaciones que esperan visto bueno de un dueño', solo: 'DUENO,OPERADOR' },
     { v: 'usuarios', ic: UserCog, t: 'Usuarios', s: 'Quién entra y qué puede hacer', solo: 'DUENO' },
     { v: 'auditoria', ic: ScrollText, t: 'Auditoría', s: 'Bitácora sellada e integridad', solo: 'DUENO,CONSULTA' }] },
 ]
@@ -101,7 +101,7 @@ export default function Encabezado(p: {
         <button className="chip-usuario" title="Mi cuenta" onClick={p.onCuenta}>
           <UserRound /><span className="cu-txt"><span>{p.usuario}</span><small>{ROLES[p.rol] ?? p.rol}</small></span>
         </button>
-        {p.rol !== 'CONSULTA' && <button className="icono" title="Configuración" onClick={p.onConfig}><Settings /></button>}
+        {p.rol === 'DUENO' && <button className="icono" title="Configuración" onClick={p.onConfig}><Settings /></button>}
       </div>
       <img src="/alpha/logo_blanco.svg" alt="Alpha" className="logo-alpha" />
     </header>

@@ -231,10 +231,8 @@ export function FormDesistir({ d, v, cerrar, listo, config }: Base & { v: Datos 
   return (
     <Modal titulo={sep ? 'Liberar lote separado' : 'Registrar desistimiento'} cerrar={cerrar} ancho boton={sep ? 'Liberar lote' : 'Registrar desistimiento'} peligro
       alEnviar={async (f) => {
-        try {
-          const r = await api<Datos>('/api/desistimiento/registrar', { venta_id: v.id, penalidad_pct: pct, otros_descuentos: otros, fecha: fec, motivo: f.motivo, otros_concepto: f.otros_concepto })
-          cerrar(); await listo(r.devolucion > 0 ? `Lote ${d.lote.id_lote} liberado. Quedan ${pesos(r.devolucion)} por devolver antes del ${fecha(r.fecha_limite)}` : `Lote ${d.lote.id_lote} liberado`)
-        } catch (e) { if (e instanceof Pendiente) { cerrar(); return } throw e }
+        const r = await api<Datos>('/api/desistimiento/registrar', { venta_id: v.id, penalidad_pct: pct, otros_descuentos: otros, fecha: fec, motivo: f.motivo, otros_concepto: f.otros_concepto })
+        cerrar(); await listo(r.devolucion > 0 ? `Lote ${d.lote.id_lote} liberado. Quedan ${pesos(r.devolucion)} por devolver antes del ${fecha(r.fecha_limite)}` : `Lote ${d.lote.id_lote} liberado`)
       }}>
       <p className="texto-modal">El negocio de <b>{v.nombre}</b> sobre el lote {d.lote.id_lote} quedará cerrado y el lote volverá a estar <b>disponible</b>.
         Los pagos se conservan en el historial; abajo se calcula cuánto se retiene y cuánto se devuelve.</p>

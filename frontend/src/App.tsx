@@ -163,7 +163,8 @@ export default function App() {
   const rol = estado.sesion.rol
   const dueno = rol === 'DUENO'
   const ir = (v: Vista) => { setAbrir(null); setSelMapa(false); setVista(v) }
-  const irALote = (id: string) => { setAbrir(id); setSelMapa(false); setVista('mapa') }
+  // Si es el mismo lote de la vez anterior, se limpia primero para que el mapa vuelva a abrirlo.
+  const irALote = (id: string) => { if (id === abrir) { setAbrir(null); setTimeout(() => setAbrir(id), 0) } else setAbrir(id); setSelMapa(false); setVista('mapa') }
   const refrescar = async () => {
     const [lotes, resumen] = await Promise.all([api<any[]>('/api/lotes'), api<any>('/api/resumen')])
     setLoteo((x) => (x ? { ...x, lotes, resumen } : x)); revisarAvisos()

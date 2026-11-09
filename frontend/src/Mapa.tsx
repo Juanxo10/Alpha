@@ -141,7 +141,7 @@ function frenteA(p: Props) {
   return l ? `${l.colinda.includes('Vía') ? 'Vía' : l.colinda[0]} (${l.rumbo.toLowerCase()})` : '—'
 }
 
-function Tarjeta({ d, p, geo, cerrar, abrirFicha }: { d: Detalle; p: Props; geo: Geo; cerrar: () => void; abrirFicha: (accion?: string) => void }) {
+function Tarjeta({ d, p, geo, cerrar, abrirFicha, ro }: { d: Detalle; p: Props; geo: Geo; cerrar: () => void; abrirFicha: (accion?: string) => void; ro?: boolean }) {
   const l = d.lote, r = d.resumen, v = d.ventas.find((x) => x.estado === 'ACTIVA')
   const pm2 = l.precio_lista ? l.precio_lista / l.area_m2 : null
   const Dato = ({ et, va }: { et: string; va: React.ReactNode }) => <div className="t-d"><span>{et}</span><b>{va}</b></div>
@@ -188,7 +188,7 @@ function Tarjeta({ d, p, geo, cerrar, abrirFicha }: { d: Detalle; p: Props; geo:
         </>
       )}
       <div className="t-acc">
-        {v ? <button className="btn pri peq" onClick={() => abrirFicha('pago')}><HandCoins />Registrar pago</button>
+        {ro ? null : v ? (v.etapa === 'SEPARADO' || v.saldo > 0.5) && <button className="btn pri peq" onClick={() => abrirFicha('pago')}><HandCoins />Registrar pago</button>
           : r.estado !== 'BLOQUEADO' && <><button className="btn pri peq" onClick={() => abrirFicha('vender')}><FileSignature />Vender</button><button className="btn sec peq" onClick={() => abrirFicha('separar')}><Bookmark />Separar</button></>}
         <button className="btn sec peq" title="Ficha completa" onClick={() => abrirFicha()}><PanelRightOpen />Ficha</button>
       </div>
@@ -197,6 +197,7 @@ function Tarjeta({ d, p, geo, cerrar, abrirFicha }: { d: Detalle; p: Props; geo:
 }
 
 export default function Mapa({ datos, abrir, config, refrescar, seleccionar, rol }: { rol?: string; datos: DatosLoteo; abrir?: string | null; config: Record<string, unknown>; refrescar: () => Promise<void>; seleccionar?: boolean }) {
+  const ro = rol === 'CONSULTA'
   const { geo, orto, lotes, resumen: r } = datos
   const contenedor = useRef<HTMLDivElement>(null)
   const mapa = useRef<maplibregl.Map | null>(null)
@@ -350,7 +351,7 @@ export default function Mapa({ datos, abrir, config, refrescar, seleccionar, rol
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos.geo, datos.orto])
 
-  useEffect(() => { if (listo && abrir) abrirFicha(abrir) }, [listo]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (listo && abrir) abrirFicha(abrir) }, [listo, abrir]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // lotes seleccionados para la venta en bloque
   useEffect(() => {
@@ -538,7 +539,7 @@ export default function Mapa({ datos, abrir, config, refrescar, seleccionar, rol
         cerrar={(vendido) => { setFormBloque(null); if (vendido) salirSeleccion() }} />}
 
       {popupEl && detalle && sel && createPortal(
-        <Tarjeta d={detalle} p={props[sel]} geo={geo} cerrar={cerrarPopup} abrirFicha={(a) => abrirFicha(sel, a)} />, popupEl)}
+        <Tarjeta d={detalle} p={props[sel]} geo={geo} cerrar={cerrarPopup} abrirFicha={(a) => abrirFicha(sel, a)} ro={ro} />, popupEl)}
     </>
   )
 }

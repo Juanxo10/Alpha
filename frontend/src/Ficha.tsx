@@ -134,6 +134,7 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
   const [m, setM] = useState<Modal>(inicial ? { t: inicial } : null)
   const cierra = () => setM(null)
   const [verBloque, setVerBloque] = useState<number | null>(null)
+  const ro = rol === 'CONSULTA'
   const l = d.lote, r = d.resumen
   const v = d.ventas.find((x) => x.estado === 'ACTIVA')
   const esSep = v?.etapa === 'SEPARADO'
@@ -195,16 +196,16 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
             </div>{alerta}</div></div>
           <div className="f-sec">
             <div className="f-acciones">
-              <button className="btn acento" onClick={() => setM({ t: 'pago' })}><HandCoins />Registrar pago</button>
-              {esSep && <button className="btn pri" onClick={() => setM({ t: 'vender' })}><FileSignature />Formalizar venta</button>}
+              {!ro && (esSep || v.saldo > 0.5) && <button className="btn acento" onClick={() => setM({ t: 'pago' })}><HandCoins />Registrar pago</button>}
+              {!ro && esSep && <button className="btn pri" onClick={() => setM({ t: 'vender' })}><FileSignature />Formalizar venta</button>}
             </div>
             <div className="f-acciones" style={{ marginTop: 8 }}>
               <button className="btn sec peq" onClick={() => imprimirEstadoCuenta(d, config)}><FileText />Estado de cuenta</button>
-              <button className="btn sec peq" onClick={() => setM({ t: 'editar' })}><Pencil />Editar negocio</button>
-              {v.etapa === 'VENDIDO' && <button className="btn sec peq" onClick={() => setM({ t: 'escritura' })}><Stamp />Escriturar</button>}
-              {v.etapa === 'ESCRITURADO' && <button className="btn sec peq" onClick={() => setM({ t: 'registro' })}><BookMarked />Registrar</button>}
-              {!esSep && v.saldo > 0.5 && <button className="btn sec peq" onClick={() => setM({ t: 'reest' })}><CalendarRange />Reestructurar plan</button>}
-              <button className="btn peligro peq" onClick={() => setM({ t: 'desistir' })}><Undo2 />{esSep ? 'Liberar lote' : 'Desistimiento'}</button>
+              {!ro && <button className="btn sec peq" onClick={() => setM({ t: 'editar' })}><Pencil />Editar negocio</button>}
+              {!ro && v.etapa === 'VENDIDO' && <button className="btn sec peq" onClick={() => setM({ t: 'escritura' })}><Stamp />Escriturar</button>}
+              {!ro && v.etapa === 'ESCRITURADO' && <button className="btn sec peq" onClick={() => setM({ t: 'registro' })}><BookMarked />Registrar</button>}
+              {!ro && !esSep && v.saldo > 0.5 && <button className="btn sec peq" onClick={() => setM({ t: 'reest' })}><CalendarRange />Reestructurar plan</button>}
+              {!ro && <button className="btn peligro peq" onClick={() => setM({ t: 'desistir' })}><Undo2 />{esSep ? 'Liberar lote' : 'Desistimiento'}</button>}
             </div>
           </div>
           <BienesFicha v={v} config={config} recargar={recargar} />
@@ -259,13 +260,13 @@ export default function Ficha({ d, props: p, geo, cerrar, config, lotes, recarga
           <div className="f-sec">
             {bloqueado && <div className="alerta-caja aviso" style={{ margin: '0 0 12px' }}><Lock /><div><b>Lote bloqueado para la venta.</b>{l.nota ? ' ' + l.nota : ''}</div></div>}
             {!l.precio_lista && !bloqueado && <div className="alerta-caja aviso" style={{ margin: '0 0 12px' }}><Tag /><div>Este lote aún no tiene <b>precio de lista</b>.</div></div>}
-            <div className="f-acciones">
+            {!ro && <div className="f-acciones">
               <button className="btn acento" disabled={bloqueado} onClick={() => setM({ t: 'vender' })}><FileSignature />Vender</button>
               <button className="btn pri" disabled={bloqueado} onClick={() => setM({ t: 'separar' })}><Bookmark />Separar</button>
-            </div>
+            </div>}
             <div className="f-acciones" style={{ marginTop: 8 }}>
-              <button className="btn sec peq" onClick={() => setM({ t: 'precio' })}><Tag />Precio y bloqueo</button>
-              <button className="btn sec peq" onClick={() => setM({ t: 'inmueble' })}><Pencil />Datos del inmueble</button>
+              {!ro && <button className="btn sec peq" onClick={() => setM({ t: 'precio' })}><Tag />Precio y bloqueo</button>}
+              {!ro && <button className="btn sec peq" onClick={() => setM({ t: 'inmueble' })}><Pencil />Datos del inmueble</button>}
               <button className="btn sec peq" disabled={bloqueado} onClick={() => setM({ t: 'cotizar' })}><Calculator />Cotizar</button>
             </div>
           </div>

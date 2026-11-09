@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { api, falla } from './api'
+import { api, falla, Pendiente } from './api'
 import { fmtN } from './formato'
 
 export const hoyISO = () => new Date().toLocaleDateString('sv-SE')
@@ -64,7 +64,10 @@ export function Modal(p: {
     f.querySelectorAll<HTMLInputElement>('input[data-dinero]').forEach((i) => { d[i.name] = Number(i.value.replace(/\D/g, '')) || 0 })
     f.querySelectorAll<HTMLInputElement>('input[type=checkbox]').forEach((i) => { d[i.name] = i.checked })
     setOcupado(true)
-    try { await p.alEnviar(d) } catch (er) { falla(er) } finally { setOcupado(false) }
+    try { await p.alEnviar(d) } catch (er) {
+      // Queda esperando a un dueño (api.ts ya avisó): se sale del formulario.
+      if (er instanceof Pendiente) p.cerrar(); else falla(er)
+    } finally { setOcupado(false) }
   }
   return (
     <div className="modal-fondo visible" onMouseDown={(e) => { if (e.target === e.currentTarget) p.cerrar() }}>
