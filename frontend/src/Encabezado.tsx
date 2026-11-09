@@ -28,7 +28,7 @@ const GRUPOS: { ic: ComponentType; t: string; items: Item[] }[] = [
     { v: 'conciliacion', ic: GitCompare, t: 'Conciliación bancaria', s: 'Cruce con el extracto del banco' },
     { v: 'bienes', ic: Car, t: 'Bienes recibidos', s: 'Vehículos, inmuebles y permutas como pago' }] },
   { ic: ShieldCheck, t: 'Administración', items: [
-    { v: 'aprobaciones', ic: ShieldAlert, t: 'Aprobaciones', s: 'Operaciones que esperan visto bueno de un dueño', solo: 'DUENO,OPERADOR' },
+    { v: 'aprobaciones', ic: ShieldAlert, t: 'Aprobaciones', s: 'Operaciones que esperan visto bueno de un dueño', solo: 'DUENO' },
     { v: 'usuarios', ic: UserCog, t: 'Usuarios', s: 'Quién entra y qué puede hacer', solo: 'DUENO' },
     { v: 'auditoria', ic: ScrollText, t: 'Auditoría', s: 'Bitácora sellada e integridad', solo: 'DUENO,CONSULTA' }] },
 ]
@@ -66,7 +66,7 @@ export default function Encabezado(p: {
       <nav className="tabs">
         <button className={p.vista === 'mapa' ? 'activo' : ''} onClick={() => va('mapa')}><Map /><span>Mapa</span></button>
         <button className={p.vista === 'tablero' ? 'activo' : ''} onClick={() => va('tablero')}><LayoutDashboard /><span>Tablero</span></button>
-        {GRUPOS.map((g) => (
+        {GRUPOS.filter((g) => g.items.some((i) => !i.solo || i.solo.split(',').includes(p.rol))).map((g) => (
           <div key={g.t} className={`grupo ${abierto === g.t ? 'abierto' : ''} ${g.items.some((i) => i.v === p.vista) ? 'activo' : ''}`}>
             <button className="g-btn" onClick={() => setAbierto(abierto === g.t ? null : g.t)}>
               <g.ic /><span>{g.t}</span>{g.t === 'Administración' && p.nAprob > 0 && <span className="badge-n">{p.nAprob}</span>}<ChevronDown className="flecha" />
